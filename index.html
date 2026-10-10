@@ -18,7 +18,7 @@
 </head>
 <body class="bg-[#e5e5e5] text-stone-800 font-sans antialiased min-h-screen flex justify-center">
 
-  <!-- WRAPPER MOBILE-FIRST (Centralizado no Desktop, Tela Cheia no Mobile) -->
+  <!-- WRAPPER MOBILE-FIRST -->
   <div class="w-full max-w-lg bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20">
 
     <!-- ALERTAS GLOBAIS -->
@@ -32,12 +32,12 @@
         <div class="text-center space-y-2">
           <div class="w-14 h-14 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto shadow-md">GL</div>
           <h1 class="text-2xl font-bold text-stone-800 tracking-tight">Operação GL</h1>
-          <p class="text-xs text-stone-400">Autenticação Segura</p>
+          <p class="text-xs text-stone-400">Espaço de Estética • Benfica</p>
         </div>
         <form onsubmit="Auth.handleLogin(event)" class="space-y-4">
           <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">E-mail</label>
-            <input type="email" id="login-email" required autocomplete="username" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition" placeholder="catia@operacaogl.pt" />
+            <label class="block text-xs font-semibold text-stone-600 mb-1">Utilizador / E-mail</label>
+            <input type="text" id="login-email" required autocomplete="username" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition" placeholder="Gabyzinha" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-stone-600 mb-1">Palavra-passe</label>
@@ -80,7 +80,7 @@
         <!-- JS Injecta Feed Aqui -->
       </main>
 
-      <!-- BOTTOM TAB BAR ESTILO APP -->
+      <!-- BOTTOM TAB BAR -->
       <nav class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-brand-100 px-6 py-3 flex justify-around items-center z-30 pb-safe">
         <button onclick="App.loadData()" class="flex flex-col items-center text-brand-600 transition transform active:scale-95">
           <span class="text-xl">🏠</span>
@@ -99,13 +99,10 @@
       </nav>
     </div>
 
-  </div> <!-- FIM WRAPPER -->
+  </div>
 
-  <!-- ========================================== -->
-  <!-- MODAL FLEXÍVEL (CRIAR E EDITAR)              -->
-  <!-- ========================================== -->
+  <!-- MODAL FLEXÍVEL (CRIAR E EDITAR) -->
   <div id="modal-agendamento" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-    <!-- Animação slide-up no mobile -->
     <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-5 border border-brand-100 text-xs max-h-[90vh] overflow-y-auto transform transition-transform animate-slide-up">
       <div class="flex justify-between items-center border-b border-brand-50 pb-3">
         <h3 id="modal-title" class="font-bold text-base text-stone-800">Novo Agendamento</h3>
@@ -113,7 +110,6 @@
       </div>
 
       <form id="form-agendamento" onsubmit="Controllers.saveData(event)" class="space-y-4">
-        <!-- Campo oculto para saber se é Edição ou Criação -->
         <input type="hidden" id="edit-id" value="" />
 
         <div>
@@ -161,11 +157,8 @@
     .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
   </style>
 
-  <!-- ========================================== -->
-  <!-- LÓGICA DE BACKEND E INTERAÇÃO (JS)         -->
-  <!-- ========================================== -->
   <script>
-    // 1. CONFIGURAÇÃO SUPABASE
+    // CONFIGURAÇÃO DAS CREDENCIAIS SUPABASE
     const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
     const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANONIMA-AQUI';
     
@@ -174,7 +167,6 @@
       db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
-    // ESTADO DA APLICAÇÃO (Single Source of Truth)
     const State = { agendamentos: [] };
 
     const Auth = {
@@ -188,17 +180,27 @@
       async handleLogin(e) {
         e.preventDefault();
         const btn = document.getElementById('btn-login');
-        const email = document.getElementById('login-email').value;
+        const userInput = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-password').value;
         
         btn.innerText = "A autenticar...";
         try {
-          if (!db) { Auth.showAlert("Aviso: Supabase não conectado. Modo demonstração.", "success"); this.loginSuccess(); return; }
-          const { error } = await db.auth.signInWithPassword({ email, password });
-          if (error) throw error;
-          this.loginSuccess();
+          // Validação local imediata para Gabyzinha / Gaby150405
+          if ((userInput.toLowerCase() === "gabyzinha" || userInput === "gabyzinha@operacaogl.pt") && password === "Gaby150405") {
+            Auth.showAlert("Bem-vinda, Gabriela!", "success");
+            this.loginSuccess();
+            return;
+          }
+
+          if (db) {
+            const { error } = await db.auth.signInWithPassword({ email: userInput, password });
+            if (error) throw error;
+            this.loginSuccess();
+          } else {
+            throw new Error("Credenciais inválidas.");
+          }
         } catch (err) {
-          Auth.showAlert("Erro: Verifique credenciais.", "error");
+          Auth.showAlert("Erro: Verifique o utilizador e a palavra-passe.", "error");
           btn.innerText = "Entrar na Agenda";
         }
       },
@@ -239,14 +241,13 @@
           <div class="flex flex-col items-center justify-center h-64 text-center space-y-3 opacity-60">
             <div class="text-4xl">📅</div>
             <h3 class="font-bold text-stone-700">A agenda está limpa!</h3>
-            <p class="text-xs text-stone-500 max-w-xs">A base de dados está vazia. Clique no botão de Novo Agendamento (+) para começar a registar.</p>
+            <p class="text-xs text-stone-500 max-w-xs">Clique no botão de Novo Agendamento (+) para registar a primeira cliente.</p>
           </div>
         `;
       },
       renderData(data) {
         if (!data || data.length === 0) return this.renderEmptyState();
 
-        // Renderizar Stories (Apenas Iniciais)
         document.getElementById('stories-container').innerHTML = data.map(i => `
           <div class="flex flex-col items-center space-y-1.5 min-w-[56px] cursor-pointer hover:opacity-80 transition">
             <div class="w-14 h-14 rounded-full p-[3px] border-[2px] border-emerald-500 flex items-center justify-center bg-transparent">
@@ -256,7 +257,6 @@
           </div>
         `).join('');
 
-        // Renderizar Feed
         document.getElementById('feed-container').innerHTML = data.map(i => {
           const dateObj = new Date(i.data_hora);
           const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -291,7 +291,6 @@
     };
 
     const Controllers = {
-      // PREPARAR EDIÇÃO: Abre o modal preenchido
       prepareEdit(id) {
         const item = State.agendamentos.find(a => a.id === id);
         if (!item) return;
@@ -300,7 +299,6 @@
         document.getElementById('input-nome').value = item.nome_temporario;
         document.getElementById('input-telefone').value = item.telefone_temporario;
         
-        // Formatar data para o input datetime-local
         const dateObj = new Date(item.data_hora);
         dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
         document.getElementById('input-data').value = dateObj.toISOString().slice(0,16);
@@ -312,7 +310,6 @@
         UI.openModal(true);
       },
 
-      // SALVAR OU ATUALIZAR (CRUD)
       async saveData(e) {
         e.preventDefault();
         UI.setSyncStatus("Sincronizando...");
@@ -330,12 +327,10 @@
         if (db) {
           try {
             if (id) {
-              // UPDATE
               const { error } = await db.from('agendamentos').update(payload).eq('id', id);
               if (error) throw error;
               Auth.showAlert("Ficha atualizada com sucesso!", "success");
             } else {
-              // INSERT
               const { error } = await db.from('agendamentos').insert([payload]);
               if (error) throw error;
               Auth.showAlert("Agendamento criado com sucesso!", "success");
@@ -346,7 +341,6 @@
             return;
           }
         } else {
-          // Lógica de UI se não houver DB (Apenas Teste Visual)
           if(id) { const idx = State.agendamentos.findIndex(a=>a.id===id); State.agendamentos[idx] = {...State.agendamentos[idx], ...payload}; } 
           else { State.agendamentos.unshift({id: Date.now().toString(), ...payload}); }
         }
