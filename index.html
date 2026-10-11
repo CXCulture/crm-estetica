@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>CRM & Agenda • Operação GL</title>
+  
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -15,7 +16,7 @@
               50: '#fdf8f6',
               100: '#f2e8e5',
               200: '#e5d3cd',
-              500: '#c89d93', // Rosa seco principal
+              500: '#c89d93', // Rosa seco oficial
               600: '#b58479',
               700: '#96675d',
             }
@@ -24,10 +25,13 @@
       }
     }
   </script>
+  
   <!-- Supabase JS Client SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- FullCalendar JS -->
+  
+  <!-- FullCalendar CDN -->
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -35,44 +39,57 @@
     .tooltip-box {
       visibility: hidden; opacity: 0; transition: opacity 0.2s;
       position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
-      width: 220px; background-color: #44403c; color: #fff; text-align: left;
-      padding: 8px 12px; border-radius: 8px; font-size: 11px; z-index: 50; line-height: 1.4;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      width: 240px; background-color: #3f3f46; color: #fff; text-align: left;
+      padding: 10px 14px; border-radius: 10px; font-size: 12px; z-index: 50; line-height: 1.4;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2);
     }
     .has-tooltip:hover .tooltip-box { visibility: visible; opacity: 1; }
-    .fc { font-family: inherit; font-size: 0.85rem; }
+    .fc { font-family: inherit; font-size: 0.9rem; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #f2e8e5 !important; }
     .fc-button-primary { background-color: #c89d93 !important; border-color: #c89d93 !important; border-radius: 0.75rem !important; }
+    .fc-button-primary:hover { background-color: #b58479 !important; }
+    .fc-timegrid-slot { height: 2.5em !important; }
   </style>
 </head>
-<body class="bg-[#f4f1ee] text-stone-800 font-sans antialiased min-h-screen flex flex-col items-center">
+<body class="bg-[#f3f0ec] text-stone-800 font-sans antialiased min-h-screen flex justify-center items-start">
 
-  <!-- WRAPPER COM DUAL MODE (DESKTOP VS CELULAR) -->
+  <!-- ALERTAS GLOBAIS -->
+  <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl text-xs font-bold shadow-2xl transition-all duration-300 text-center"></div>
+
+  <!-- WRAPPER COM DUAL MODE (RESPONSIVIDADE INTELIGENTE) -->
   <div id="main-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300">
 
-    <!-- ALERTAS GLOBAIS -->
-    <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[90%] p-3.5 rounded-2xl text-xs font-semibold shadow-xl transition-all duration-300 text-center"></div>
-
     <!-- ========================================== -->
-    <!-- TELA DE LOGIN SEGURO                       -->
+    <!-- 1. TELA DE LOGIN SEGURO (NATIVO / AUTOCOMPLETE) -->
     <!-- ========================================== -->
     <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 bg-white">
       <div class="w-full max-w-sm space-y-6">
         <div class="text-center space-y-2">
-          <div class="w-14 h-14 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-xl mx-auto shadow-md">GL</div>
+          <div class="w-16 h-16 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto shadow-lg">GL</div>
           <h1 class="text-2xl font-bold text-stone-800 tracking-tight">Operação GL</h1>
-          <p class="text-xs text-stone-500 font-medium">CRM & Gestão Estética Avançada</p>
+          <p class="text-sm text-stone-500 font-medium">CRM & Gestão Estética Avançada</p>
         </div>
-        <form onsubmit="Auth.handleLogin(event)" class="space-y-4 text-xs">
+
+        <!-- FORMULÁRIO COMPATÍVEL COM GERENCIADORES DE SENHA -->
+        <form id="login-form" method="POST" onsubmit="Auth.handleLogin(event)" class="space-y-4">
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Utilizador / E-mail</label>
-            <input type="text" id="login-email" required autocomplete="username" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition" placeholder="Gabyzinha ou e-mail" />
+            <label for="login-username" class="block text-sm font-semibold text-stone-700 mb-1">Utilizador ou E-mail</label>
+            <input type="text" id="login-username" name="username" required autocomplete="username" class="w-full p-3.5 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition shadow-xs" placeholder="Gabyzinha ou e-mail" />
           </div>
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Palavra-passe</label>
-            <input type="password" id="login-password" required autocomplete="current-password" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition" placeholder="••••••••" />
+            <label for="login-password" class="block text-sm font-semibold text-stone-700 mb-1">Palavra-passe</label>
+            <input type="password" id="login-password" name="password" required autocomplete="current-password" class="w-full p-3.5 text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition shadow-xs" placeholder="••••••••" />
           </div>
-          <button type="submit" id="btn-login" class="w-full py-3.5 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-sm">
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center space-x-2 cursor-pointer text-stone-600">
+              <input type="checkbox" id="remember-me" name="remember_me" checked class="rounded border-brand-200 text-brand-500 focus:ring-brand-500 w-4 h-4" />
+              <span>Mantenha-me conectado</span>
+            </label>
+            <button type="button" onclick="Auth.showRecoveryView()" class="text-brand-600 font-semibold hover:underline">Recuperar acesso</button>
+          </div>
+
+          <button type="submit" id="btn-login" class="w-full py-4 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-sm">
             Entrar no CRM Operação GL
           </button>
         </form>
@@ -80,105 +97,151 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- ÁREA PROTEGIDA: CRM COMPLETO               -->
+    <!-- 2. REPUTAÇÃO & RECUPERAÇÃO DE ACESSO       -->
+    <!-- ========================================== -->
+    <div id="view-recovery" class="hidden flex-1 flex flex-col justify-center items-center p-6 bg-white space-y-6">
+      <div class="w-full max-w-sm space-y-4">
+        <h2 class="text-xl font-bold text-stone-800">Recuperar Palavra-passe</h2>
+        <p class="text-xs text-stone-500">Introduza o e-mail cadastrado para receber o código de verificação.</p>
+        <form onsubmit="Auth.handleSendRecoveryCode(event)" class="space-y-4 text-xs">
+          <input type="email" id="recovery-email" required class="w-full p-3.5 text-sm rounded-xl border border-brand-100 bg-brand-50/30" placeholder="gabyzinha@operacaogl.pt" />
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition text-sm">Enviar Código de Segurança</button>
+          <button type="button" onclick="Auth.showLoginView()" class="w-full text-center text-stone-400 hover:text-stone-600 font-semibold">← Voltar ao Login</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. ÁREA PROTEGIDA: CRM EXECUÇÃO COMPLETA  -->
     <!-- ========================================== -->
     <div id="view-app" class="hidden flex-1 flex flex-col h-full relative">
       
-      <!-- TOPBAR E BARRA DE CONTROLO DE MODO -->
-      <header class="bg-white/95 backdrop-blur-md sticky top-0 z-30 px-5 py-3 border-b border-brand-100 flex flex-col space-y-2">
+      <!-- TOPBAR HEADER -->
+      <header class="bg-white/95 backdrop-blur-md sticky top-0 z-30 px-5 py-3 border-b border-brand-100 flex flex-col space-y-3 shadow-xs">
         <div class="flex justify-between items-center">
           <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">GL</div>
+            <div class="w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">GL</div>
             <div>
-              <span class="block font-bold text-sm tracking-tight text-stone-800">Operação GL</span>
-              <span id="sync-status" class="block text-[10px] font-semibold text-emerald-600">Servidor Conectado</span>
+              <span class="block font-bold text-base tracking-tight text-stone-800">Operação GL</span>
+              <span id="sync-status" class="block text-xs font-semibold text-emerald-600">● Base de Dados Ativa</span>
             </div>
           </div>
           <div class="flex items-center space-x-2">
-            <!-- ALTERNADOR DE MODO COMPUTADOR / CELULAR -->
-            <button onclick="UI.toggleLayoutMode()" id="btn-view-mode" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-1.5 rounded-lg border border-brand-200 font-semibold transition flex items-center space-x-1">
+            <!-- ALTERNADOR MODO COMPUTADOR / TELEMÓVEL -->
+            <button onclick="UI.toggleLayoutMode()" id="btn-view-mode" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-xl border border-brand-200 font-bold transition flex items-center space-x-1">
               <span id="view-mode-icon">🖥️</span> <span id="view-mode-label">Ver Computador</span>
             </button>
-            <button onclick="Auth.handleLogout()" class="text-xs text-rose-600 font-semibold px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-100 transition">Sair</button>
+            <button onclick="Auth.handleLogout()" class="text-xs text-rose-600 font-bold px-3 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-100 transition">Sair</button>
           </div>
         </div>
 
-        <!-- SEPARADORES DO CRM -->
-        <nav class="flex space-x-1 overflow-x-auto no-scrollbar pt-1 text-xs font-semibold">
-          <button onclick="UI.switchTab('agenda')" id="tab-agenda" class="px-3 py-1.5 rounded-lg bg-brand-500 text-white shadow-xs">📅 Agenda & Feed</button>
-          <button onclick="UI.switchTab('clientes')" id="tab-clientes" class="px-3 py-1.5 rounded-lg text-stone-500 hover:bg-brand-50">👤 Clientes & Anamnese</button>
-          <button onclick="UI.switchTab('laser')" id="tab-laser" class="px-3 py-1.5 rounded-lg text-stone-500 hover:bg-brand-50">⚡ Parâmetros Laser</button>
-          <button onclick="UI.switchTab('catalogo')" id="tab-catalogo" class="px-3 py-1.5 rounded-lg text-stone-500 hover:bg-brand-50">✨ Catálogo</button>
-          <button onclick="UI.switchTab('dashboard')" id="tab-dashboard" class="px-3 py-1.5 rounded-lg text-stone-500 hover:bg-brand-50">📊 Métricas</button>
+        <!-- MÓDULOS NAVEGAÇÃO DO CRM -->
+        <nav class="flex space-x-1 overflow-x-auto no-scrollbar pt-1 text-xs font-bold">
+          <button onclick="UI.switchTab('agenda')" id="tab-agenda" class="px-3.5 py-2 rounded-xl bg-brand-500 text-white shadow-xs whitespace-nowrap">📅 Agenda & Calendário</button>
+          <button onclick="UI.switchTab('clientes')" id="tab-clientes" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">👤 Clientes & Anamnese</button>
+          <button onclick="UI.switchTab('laser')" id="tab-laser" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">⚡ Parâmetros Laser</button>
+          <button onclick="UI.switchTab('catalogo')" id="tab-catalogo" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">✨ Catálogo & Preços</button>
+          <button onclick="UI.switchTab('dashboard')" id="tab-dashboard" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">📊 Métricas & Cross-Sell</button>
         </nav>
       </header>
 
-      <!-- CONTEÚDO DOS MÓDULOS DO CRM -->
-      <main class="flex-1 overflow-y-auto p-4 space-y-4">
+      <!-- ÁREA DE CONTEÚDO DINÂMICO -->
+      <main class="flex-1 overflow-y-auto p-4 space-y-5">
 
-        <!-- MÓDULO 1: AGENDA & FEED (INICIAL) -->
+        <!-- MÓDULO 1: AGENDA & CALENDÁRIO COM INTERAÇÃO POR SLOT -->
         <section id="sec-agenda" class="space-y-4">
-          <!-- STORIES: CLIENTES DO DIA -->
-          <div class="bg-white p-3 rounded-2xl border border-brand-100 shadow-xs">
-            <p class="text-[10px] font-bold uppercase text-stone-400 tracking-wider mb-2">Atendimentos de Hoje</p>
+          <!-- STORIES ATENDIMENTOS DO DIA -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs">
+            <p class="text-xs font-bold uppercase text-stone-400 tracking-wider mb-2.5">Atendimentos de Hoje</p>
             <div id="stories-container" class="flex space-x-4 overflow-x-auto no-scrollbar pb-1"></div>
           </div>
 
-          <!-- CALENDÁRIO / FEED SWITCH -->
           <div class="flex justify-between items-center px-1">
-            <h2 class="text-sm font-bold text-stone-800">Agendamentos & Sessões</h2>
-            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-xs">+ Novo Agendamento</button>
+            <h2 class="text-base font-bold text-stone-800">Feed de Sessões</h2>
+            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-xs transition">+ Novo Agendamento</button>
           </div>
 
           <div id="feed-container" class="space-y-3"></div>
           
-          <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs mt-4">
-            <h3 class="text-xs font-bold text-stone-700 mb-3">Visão Geral do Calendário</h3>
+          <!-- CALENDÁRIO COMPLETO COM EVENTOS E SELEÇÃO DE SLOT -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-bold text-stone-800">Calendário Interativo</h3>
+              <span class="text-xs text-stone-400">Clique em qualquer horário para agendar</span>
+            </div>
             <div id="calendar"></div>
           </div>
         </section>
 
-        <!-- MÓDULO 2: CLIENTES & ANAMNESE CLÍNICA -->
+        <!-- MÓDULO 2: REGISTO DE CLIENTES & ANAMNESE CLÍNICA -->
         <section id="sec-clientes" class="hidden space-y-4">
           <div class="flex justify-between items-center">
             <div>
-              <h2 class="text-sm font-bold text-stone-800">Base de Clientes & Fichas Técnicas</h2>
-              <p class="text-[11px] text-stone-400">Histórico pessoal, morada, fototipo e alertas clínicos</p>
+              <h2 class="text-base font-bold text-stone-800">Fichas de Clientes & Anamnese</h2>
+              <p class="text-xs text-stone-400">Dados de contacto, morada, fototipo e medicação</p>
             </div>
-            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold shadow-xs">+ Nova Cliente</button>
+            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-xs">+ Cadastrar Cliente</button>
           </div>
           <div id="clientes-list" class="space-y-3"></div>
         </section>
 
-        <!-- MÓDULO 3: HISTÓRICO TÉCNICO DE PARÂMETROS DO LASER -->
+        <!-- MÓDULO 3: HISTÓRICO DE PARÂMETROS DO LASER -->
         <section id="sec-laser" class="hidden space-y-4">
-          <div class="flex justify-between items-center">
-            <div>
-              <h2 class="text-sm font-bold text-stone-800">Parâmetros das Máquinas de Laser</h2>
-              <p class="text-[11px] text-stone-400">Registo de fluência ($J/cm²$), pulso ($ms$), disparos e ponteira</p>
-            </div>
+          <div>
+            <h2 class="text-base font-bold text-stone-800">Histórico de Parâmetros de Laser</h2>
+            <p class="text-xs text-stone-400">Registo técnico de fluência ($J/cm²$), pulso ($ms$), spot e disparos</p>
           </div>
           <div id="laser-list" class="space-y-3"></div>
         </section>
 
-        <!-- MÓDULO 4: CATÁLOGO DE SERVIÇOS & MANUAL -->
+        <!-- MÓDULO 4: CATÁLOGO DUPLO (LASER + ESTÉTICA FACIAL) -->
         <section id="sec-catalogo" class="hidden space-y-4">
-          <h2 class="text-sm font-bold text-stone-800">Catálogo de Serviços & Tabela de Preços</h2>
+          <h2 class="text-base font-bold text-stone-800">Catálogo Oficial de Procedimentos</h2>
+          
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-white p-4 rounded-2xl border border-brand-100 space-y-2">
-              <h3 class="text-xs font-bold uppercase text-brand-600">Depilação a Laser (Zonas & Corpo Todo)</h3>
-              <ul class="text-xs space-y-2 text-stone-600">
-                <li class="flex justify-between border-b pb-1"><span>Zonas Pequenas (Buço, Queixo, Axilas)</span> <span class="font-bold">€ 15 - € 25</span></li>
-                <li class="flex justify-between border-b pb-1"><span>Zonas Médias / Grandes (Virilha, Pernas)</span> <span class="font-bold">€ 35 - € 60</span></li>
-                <li class="flex justify-between"><span>Combo Corpo Todo</span> <span class="font-bold text-brand-600">€ 120,00</span></li>
+            <!-- CATÁLOGO A: DEPILAÇÃO A LASER -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-100 space-y-3 shadow-xs">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-1">
+                <span>⚡</span> <span>Depilação a Laser (Zonas & Corpo Todo)</span>
+              </h3>
+              <ul class="text-xs space-y-2.5 text-stone-600">
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Zonas Pequenas (Buço, Queixo, Axilas, Linha Alba)</span> 
+                  <span class="font-bold text-stone-800">€ 15,00 - € 25,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Zonas Médias / Grandes (Virilha Total, Meia Perna, Coxas)</span> 
+                  <span class="font-bold text-stone-800">€ 35,00 - € 60,00</span>
+                </li>
+                <li class="flex justify-between pt-1">
+                  <span class="font-bold text-stone-800">Sessão Corpo Todo (Pacote Geral)</span> 
+                  <span class="font-bold text-brand-600 text-sm">€ 120,00</span>
+                </li>
               </ul>
             </div>
-            <div class="bg-white p-4 rounded-2xl border border-brand-100 space-y-2">
-              <h3 class="text-xs font-bold uppercase text-brand-600">Estética Facial / Tratamentos Cátia</h3>
-              <ul class="text-xs space-y-2 text-stone-600">
-                <li class="flex justify-between border-b pb-1"><span>Limpeza de Pele Profunda + Hidratação</span> <span class="font-bold">€ 45,00</span></li>
-                <li class="flex justify-between border-b pb-1"><span>Tratamento de Acne e Manchas</span> <span class="font-bold">€ 55,00</span></li>
-                <li class="flex justify-between"><span>Avaliação Fisiológica Dérmica</span> <span class="font-bold">€ 30,00</span></li>
+
+            <!-- CATÁLOGO B: ESTÉTICA FACIAL (CÁTIA) -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-100 space-y-3 shadow-xs">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-1">
+                <span>✨</span> <span>Estética Facial (Tratamentos Especializados Cátia)</span>
+              </h3>
+              <ul class="text-xs space-y-2.5 text-stone-600">
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Limpeza de Pele Profunda + Hidratação Fisiológica</span> 
+                  <span class="font-bold text-stone-800">€ 45,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Protocolo Anti-Manchas & Acne (Peeling Suave)</span> 
+                  <span class="font-bold text-stone-800">€ 55,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Microagulhamento / Renovação Dérmica</span> 
+                  <span class="font-bold text-stone-800">€ 65,00</span>
+                </li>
+                <li class="flex justify-between pt-1">
+                  <span>Avaliação e Diagnóstico Fisiológico Dérmico</span> 
+                  <span class="font-bold text-brand-600 text-sm">€ 30,00</span>
+                </li>
               </ul>
             </div>
           </div>
@@ -188,20 +251,20 @@
         <section id="sec-dashboard" class="hidden space-y-4">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
-              <p class="text-[10px] font-bold uppercase text-stone-400">Total Clientes</p>
-              <p class="text-xl font-bold text-stone-800" id="dash-total-clientes">0</p>
+              <p class="text-xs font-bold uppercase text-stone-400">Total Clientes</p>
+              <p class="text-2xl font-bold text-stone-800" id="dash-total-clientes">0</p>
             </div>
             <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
-              <p class="text-[10px] font-bold uppercase text-stone-400">Cross-sell Facial</p>
-              <p class="text-xl font-bold text-brand-600" id="dash-cross-sell">0</p>
+              <p class="text-xs font-bold uppercase text-stone-400">Oportunidades Facial</p>
+              <p class="text-2xl font-bold text-brand-600" id="dash-cross-sell">0</p>
             </div>
             <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
-              <p class="text-[10px] font-bold uppercase text-stone-400">Previsão Mês</p>
-              <p class="text-xl font-bold text-stone-800" id="dash-faturamento">€ 0,00</p>
+              <p class="text-xs font-bold uppercase text-stone-400">Faturamento Previsto</p>
+              <p class="text-2xl font-bold text-stone-800" id="dash-faturamento">€ 0,00</p>
             </div>
             <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
-              <p class="text-[10px] font-bold uppercase text-stone-400">Sessões Laser</p>
-              <p class="text-xl font-bold text-brand-500" id="dash-retornos">0</p>
+              <p class="text-xs font-bold uppercase text-stone-400">Sessões Laser</p>
+              <p class="text-2xl font-bold text-brand-500" id="dash-retornos">0</p>
             </div>
           </div>
         </section>
@@ -212,42 +275,63 @@
 
   </div> <!-- FIM WRAPPER -->
 
-  <!-- MODAL DE FICHA TÉCNICA, ANAMNESE E PARÂMETROS -->
+  <!-- MODAL DE CADASTRO, ANAMNESE E SELEÇÃO DE SLOT DO CALENDÁRIO -->
   <div id="modal-agendamento" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
     <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 border border-brand-100 text-xs max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center border-b border-brand-50 pb-3">
-        <h3 id="modal-title" class="font-bold text-sm text-stone-800">Ficha Técnica da Cliente & Sessão</h3>
+        <h3 id="modal-title" class="font-bold text-base text-stone-800">Ficha de Agendamento & Anamnese</h3>
         <button onclick="UI.closeModal()" class="text-stone-400 hover:text-stone-700 text-xl font-bold bg-stone-100 w-8 h-8 rounded-full flex items-center justify-center">&times;</button>
       </div>
 
-      <form id="form-agendamento" onsubmit="Controllers.saveData(event)" class="space-y-3">
+      <form id="form-agendamento" onsubmit="Controllers.saveData(event)" class="space-y-4">
         <input type="hidden" id="edit-id" value="" />
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">Nome Completo *</label>
-            <input type="text" id="input-nome" required class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Catlene" />
+            <label class="block font-semibold text-stone-700 mb-1">Nome Completo *</label>
+            <input type="text" id="input-nome" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Catlene" />
           </div>
           <div>
-            <label class="block font-semibold text-stone-600 mb-1">WhatsApp / Telefone *</label>
-            <input type="text" id="input-telefone" required class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: 920465838" />
+            <label class="block font-semibold text-stone-700 mb-1">WhatsApp / Telefone *</label>
+            <input type="text" id="input-telefone" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: 920465838" />
           </div>
         </div>
 
         <div>
-          <label class="block font-semibold text-stone-600 mb-1">Endereço / Morada</label>
-          <input type="text" id="input-endereco" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Benfica, Lisboa" />
+          <label class="block font-semibold text-stone-700 mb-1">Data e Hora *</label>
+          <input type="datetime-local" id="input-data" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20 font-mono" />
         </div>
 
+        <!-- SELEÇÃO DE PROCEDIMENTOS (CATÁLOGO DUAL) -->
+        <div>
+          <label class="block font-semibold text-stone-700 mb-1">Procedimento / Tratamento *</label>
+          <select id="select-procedimento" onchange="Controllers.handleProcedimentoSelect(this.value)" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20 font-medium">
+            <optgroup label="⚡ Depilação a Laser">
+              <option value="Laser - Zonas Pequenas (Buço/Axilas)">Laser - Zonas Pequenas (Buço/Axilas)</option>
+              <option value="Laser - Zonas Grandes (Virilha/Pernas)">Laser - Zonas Grandes (Virilha/Pernas)</option>
+              <option value="Laser - Corpo Todo">Laser - Corpo Todo</option>
+            </optgroup>
+            <optgroup label="✨ Estética Facial (Cátia)">
+              <option value="Facial - Limpeza de Pele Profunda">Facial - Limpeza de Pele Profunda</option>
+              <option value="Facial - Tratamento Acne/Manchas">Facial - Tratamento Acne/Manchas</option>
+              <option value="Facial - Microagulhamento">Facial - Microagulhamento</option>
+            </optgroup>
+            <option value="outro">✍️ Outro (Digitar Manualmente...)</option>
+          </select>
+        </div>
+
+        <div id="box-procedimento-manual" class="hidden">
+          <label class="block font-semibold text-stone-700 mb-1">Procedimento Personalizado</label>
+          <input type="text" id="input-zonas-manual" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Digite o tratamento customizado" />
+        </div>
+
+        <!-- PARÂMETROS DO LASER -->
         <div class="border-t border-brand-100 pt-3 space-y-3">
-          <p class="font-bold text-brand-600 uppercase tracking-wider text-[10px]">🩺 Resumo de Anamnese Clínica</p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <p class="font-bold text-brand-600 uppercase tracking-wider text-xs">⚡ Parâmetros de Laser & Anamnese</p>
+          <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">
-                Fototipo Fitzpatrick *
-                <span class="has-tooltip text-brand-500">ⓘ<span class="tooltip-box">Mede a reação ao sol. Orienta a energia de segurança do laser.</span></span>
-              </label>
-              <select id="input-fototipo" required class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20">
+              <label class="block font-semibold text-stone-700 mb-1">Fototipo Fitzpatrick</label>
+              <select id="input-fototipo" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20">
                 <option value="Fototipo III - Morena Clara">Fototipo III - Morena Clara</option>
                 <option value="Fototipo I - Muito Clara">Fototipo I - Muito Clara</option>
                 <option value="Fototipo II - Clara">Fototipo II - Clara</option>
@@ -257,44 +341,15 @@
               </select>
             </div>
             <div>
-              <label class="block font-semibold text-stone-600 mb-1">Uso de Ácidos / Roacutan?</label>
-              <input type="text" id="input-acidos" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Ácido Glicólico (parou há 15 dias)" />
-            </div>
-          </div>
-        </div>
-
-        <div class="border-t border-brand-100 pt-3 space-y-3">
-          <p class="font-bold text-brand-600 uppercase tracking-wider text-[10px]">⚡ Parâmetros da Máquina de Laser</p>
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Data e Hora *</label>
-            <input type="datetime-local" id="input-data" required class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" />
-          </div>
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Zonas do Laser / Tratamento *</label>
-            <input type="text" id="input-zonas" required class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Buço, Queixo e Axilas" />
-          </div>
-          <div class="grid grid-cols-3 gap-2">
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">
-                Fluência ($J/cm²$)
-                <span class="has-tooltip text-brand-500">ⓘ<span class="tooltip-box">Quantidade de energia entregue por $cm²$.</span></span>
-              </label>
+              <label class="block font-semibold text-stone-700 mb-1">Fluência ($J/cm²$)</label>
               <input type="number" step="0.1" id="input-fluencia" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="18" />
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Pulso ($ms$)</label>
-              <input type="number" id="input-pulso" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="30" />
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Disparos</label>
-              <input type="number" id="input-disparos" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="450" />
             </div>
           </div>
         </div>
 
         <div class="flex space-x-2 pt-3">
-          <button type="button" onclick="UI.closeModal()" class="w-1/3 py-3 rounded-xl font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition text-xs">Cancelar</button>
-          <button type="submit" id="btn-submit" class="w-2/3 py-3 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-xs">Salvar Ficha do CRM</button>
+          <button type="button" onclick="UI.closeModal()" class="w-1/3 py-3.5 rounded-xl font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition text-xs">Cancelar</button>
+          <button type="submit" id="btn-submit" class="w-2/3 py-3.5 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-xs">Salvar no CRM</button>
         </div>
       </form>
     </div>
@@ -302,7 +357,7 @@
 
   <!-- JAVASCRIPT DE INTEGRAÇÃO DO CRM -->
   <script>
-    // CONFIGURAÇÃO SUPABASE
+    // CREDENCIAIS DO SUPABASE (Substitua pelas suas)
     const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
     const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANONIMA-AQUI';
     
@@ -316,18 +371,28 @@
     const Auth = {
       showAlert(msg, type = 'error') {
         const box = document.getElementById('auth-alert');
-        box.className = `fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-sm w-[90%] p-3.5 rounded-2xl text-xs font-bold shadow-xl transition-all duration-300 text-center ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
+        box.className = `fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl text-xs font-bold shadow-2xl transition-all duration-300 text-center ${type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`;
         box.innerText = msg;
         box.classList.remove('hidden');
         setTimeout(() => box.classList.add('hidden'), 3500);
       },
+      showLoginView() {
+        document.getElementById('view-login').classList.remove('hidden');
+        document.getElementById('view-recovery').classList.add('hidden');
+        document.getElementById('view-app').classList.add('hidden');
+      },
+      showRecoveryView() {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-recovery').classList.remove('hidden');
+        document.getElementById('view-app').classList.add('hidden');
+      },
       async handleLogin(e) {
         e.preventDefault();
-        const userInput = document.getElementById('login-email').value.trim();
+        const userInput = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value;
         
         if ((userInput.toLowerCase() === "gabyzinha" || userInput === "gabyzinha@operacaogl.pt") && password === "Gaby150405") {
-          Auth.showAlert("Bem-vinda, Gabriela!", "success");
+          Auth.showAlert("Bem-vinda à Operação GL, Gabriela!", "success");
           this.loginSuccess();
           return;
         }
@@ -336,17 +401,17 @@
           const { error } = await db.auth.signInWithPassword({ email: userInput, password });
           if (!error) return this.loginSuccess();
         }
-        Auth.showAlert("Erro: Verifique o utilizador e a palavra-passe.", "error");
+        Auth.showAlert("Erro de Acesso: Verifique o utilizador e a palavra-passe.", "error");
       },
       loginSuccess() {
         document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-recovery').classList.add('hidden');
         document.getElementById('view-app').classList.remove('hidden');
         App.init();
       },
       async handleLogout() {
         if (db) await db.auth.signOut();
-        document.getElementById('view-login').classList.remove('hidden');
-        document.getElementById('view-app').classList.add('hidden');
+        this.showLoginView();
       }
     };
 
@@ -360,7 +425,7 @@
         if (State.isDesktopLayout) {
           container.className = "w-full max-w-6xl bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300";
           icon.innerText = "📱";
-          label.innerText = "Ver Celular";
+          label.innerText = "Ver Telemóvel";
         } else {
           container.className = "w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300";
           icon.innerText = "🖥️";
@@ -370,15 +435,18 @@
       switchTab(tab) {
         ['agenda', 'clientes', 'laser', 'catalogo', 'dashboard'].forEach(t => {
           document.getElementById(`sec-${t}`).classList.add('hidden');
-          document.getElementById(`tab-${t}`).className = "px-3 py-1.5 rounded-lg text-stone-500 hover:bg-brand-50";
+          document.getElementById(`tab-${t}`).className = "px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap";
         });
         document.getElementById(`sec-${tab}`).classList.remove('hidden');
-        document.getElementById(`tab-${tab}`).className = "px-3 py-1.5 rounded-lg bg-brand-500 text-white shadow-xs";
+        document.getElementById(`tab-${tab}`).className = "px-3.5 py-2 rounded-xl bg-brand-500 text-white shadow-xs whitespace-nowrap";
 
         if (tab === 'agenda') renderCalendar();
       },
-      openModal(isEdit = false) {
-        document.getElementById('modal-title').innerText = isEdit ? "Editar Ficha de Atendimento" : "Novo Agendamento";
+      openModal(isEdit = false, selectedDateTime = null) {
+        document.getElementById('modal-title').innerText = isEdit ? "Editar Ficha no CRM" : "Novo Agendamento";
+        if (selectedDateTime) {
+          document.getElementById('input-data').value = selectedDateTime;
+        }
         document.getElementById('modal-agendamento').classList.remove('hidden');
       },
       closeModal() {
@@ -391,25 +459,23 @@
         document.getElementById('feed-container').innerHTML = `
           <div class="flex flex-col items-center justify-center h-48 text-center space-y-2 opacity-60 bg-white rounded-2xl p-6 border border-brand-100">
             <div class="text-3xl">📅</div>
-            <h3 class="font-bold text-stone-700 text-xs">Agenda limpa no momento</h3>
-            <p class="text-[11px] text-stone-500 max-w-xs">Clique em "+ Novo Agendamento" para começar a cadastrar as fichas das clientes.</p>
+            <h3 class="font-bold text-stone-700 text-xs">A base de dados está pronta</h3>
+            <p class="text-xs text-stone-500 max-w-xs">Clique no calendário ou no botão "+ Novo Agendamento" para começar.</p>
           </div>
         `;
       },
       renderData(data) {
         if (!data || data.length === 0) return this.renderEmptyState();
 
-        // Renderizar Stories
         document.getElementById('stories-container').innerHTML = data.map(i => `
           <div class="flex flex-col items-center space-y-1 min-w-[56px] cursor-pointer" onclick="Controllers.prepareEdit('${i.id}')">
-            <div class="w-13 h-13 rounded-full p-[2px] border-2 border-emerald-500 flex items-center justify-center bg-white">
-              <div class="w-11 h-11 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-xs">${i.nome_temporario ? i.nome_temporario.substring(0,2).toUpperCase() : 'GL'}</div>
+            <div class="w-12 h-12 rounded-full p-[2px] border-2 border-emerald-500 flex items-center justify-center bg-white">
+              <div class="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-xs">${i.nome_temporario ? i.nome_temporario.substring(0,2).toUpperCase() : 'GL'}</div>
             </div>
             <span class="text-[10px] font-bold text-stone-700 truncate w-14 text-center">${(i.nome_temporario || '').split(' ')[0]}</span>
           </div>
         `).join('');
 
-        // Renderizar Feed Dinâmico
         document.getElementById('feed-container').innerHTML = data.map(i => {
           const dateObj = new Date(i.data_hora);
           const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -419,37 +485,37 @@
           <article class="bg-white rounded-2xl overflow-hidden shadow-xs border border-brand-100">
             <div class="p-3.5 flex justify-between items-start bg-white border-b border-brand-50">
               <div class="flex items-center space-x-3">
-                <div class="w-9 h-9 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold text-xs shadow-xs">${i.nome_temporario ? i.nome_temporario.substring(0,2).toUpperCase() : 'GL'}</div>
+                <div class="w-9 h-9 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold text-xs">${i.nome_temporario ? i.nome_temporario.substring(0,2).toUpperCase() : 'GL'}</div>
                 <div>
                   <h3 class="text-xs font-bold text-stone-800">${i.nome_temporario}</h3>
-                  <p class="text-[10px] text-stone-400">📅 ${day} às ${time} • WhatsApp: ${i.telefone_temporario}</p>
+                  <p class="text-[10px] text-stone-400">📅 ${day} às ${time} • Tel: ${i.telefone_temporario}</p>
                 </div>
               </div>
               <button onclick="Controllers.prepareEdit('${i.id}')" class="text-stone-400 hover:text-brand-600 text-xs font-bold bg-brand-50 px-2 py-1 rounded-lg">✏️ Editar</button>
             </div>
             <div class="p-3 bg-brand-50/20 space-y-2 text-xs">
-              <p class="text-stone-600">Zonas: <strong class="text-stone-800">${i.zonas}</strong></p>
+              <p class="text-stone-600">Tratamento: <strong class="text-stone-800">${i.zonas}</strong></p>
               <div class="p-2 bg-white rounded-xl border border-brand-100 flex justify-between items-center font-mono text-[11px]">
                 <span>Fluência: <strong>${i.fluencia || '--'} J/cm²</strong></span>
-                <span>Disparos: <strong>${i.disparos || '--'}</strong></span>
+                <span>Fototipo: <strong>${i.fototipo || 'III'}</strong></span>
               </div>
-            </div>
-            <div class="p-2 bg-white border-t border-brand-50 flex justify-around text-xs text-stone-600">
-              <button onclick="window.open('https://wa.me/${i.telefone_temporario}')" class="hover:text-brand-600 font-semibold">💬 WhatsApp</button>
-              <button onclick="Controllers.prepareEdit('${i.id}')" class="hover:text-brand-600 font-semibold">⚡ Laser</button>
             </div>
           </article>
         `}).join('');
 
-        // Atualizar Métricas
+        // Atualizar Dashboard
         document.getElementById('dash-total-clientes').innerText = data.length;
-        document.getElementById('dash-cross-sell').innerText = Math.ceil(data.length * 0.3);
+        document.getElementById('dash-cross-sell').innerText = Math.ceil(data.length * 0.4);
         document.getElementById('dash-faturamento').innerText = `€ ${(data.length * 45).toFixed(2)}`;
         document.getElementById('dash-retornos').innerText = data.length;
       }
     };
 
     const Controllers = {
+      handleProcedimentoSelect(val) {
+        const boxManual = document.getElementById('box-procedimento-manual');
+        boxManual.classList.toggle('hidden', val !== 'outro');
+      },
       prepareEdit(id) {
         const item = State.agendamentos.find(a => a.id === id);
         if (!item) return;
@@ -457,22 +523,24 @@
         document.getElementById('edit-id').value = item.id;
         document.getElementById('input-nome').value = item.nome_temporario || '';
         document.getElementById('input-telefone').value = item.telefone_temporario || '';
-        document.getElementById('input-zonas').value = item.zonas || '';
+        document.getElementById('select-procedimento').value = item.zonas || '';
         document.getElementById('input-fluencia').value = item.fluencia || 0;
-        document.getElementById('input-disparos').value = item.disparos || 0;
         
         UI.openModal(true);
       },
       async saveData(e) {
         e.preventDefault();
         const id = document.getElementById('edit-id').value;
+        const procSelect = document.getElementById('select-procedimento').value;
+        const procManual = document.getElementById('input-zonas-manual').value;
+
         const payload = {
           nome_temporario: document.getElementById('input-nome').value.trim(),
           telefone_temporario: document.getElementById('input-telefone').value.trim(),
           data_hora: new Date(document.getElementById('input-data').value || Date.now()).toISOString(),
-          zonas: document.getElementById('input-zonas').value.trim(),
+          zonas: procSelect === 'outro' ? procManual : procSelect,
           fluencia: parseFloat(document.getElementById('input-fluencia').value) || 0,
-          disparos: parseInt(document.getElementById('input-disparos').value) || 0
+          fototipo: document.getElementById('input-fototipo').value
         };
 
         if (db) {
@@ -491,7 +559,7 @@
         }
 
         UI.closeModal();
-        Auth.showAlert("Ficha guardada com sucesso no CRM!", "success");
+        Auth.showAlert("Dados gravados com sucesso!", "success");
         await App.loadData();
       }
     };
@@ -501,8 +569,13 @@
       if (calendarObj) return;
       const calendarEl = document.getElementById('calendar');
       calendarObj = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' }
+        initialView: 'timeGridWeek',
+        selectable: true,
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth' },
+        select: function(info) {
+          const selectedDateTime = info.startStr.slice(0, 16);
+          UI.openModal(false, selectedDateTime);
+        }
       });
       calendarObj.render();
     }
@@ -521,8 +594,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      const dateString = now.toISOString().slice(0, 16);
-      document.getElementById('input-data').value = dateString;
+      document.getElementById('input-data').value = now.toISOString().slice(0, 16);
     });
   </script>
 </body>
