@@ -161,49 +161,59 @@
         <section id="sec-catalogo" class="hidden space-y-4">
           <h2>Catálogo Oficial de Procedimentos</h2>
           
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="card-crm space-y-3">
-              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-1">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+            
+            <!-- Catálogo A: Depilação a Laser -->
+            <div class="card-crm space-y-4">
+              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-2 border-b border-[#f2e8e5] pb-2">
                 <span>⚡</span> <span>Depilação a Laser (Zonas & Corpo Todo)</span>
               </h3>
-              <ul class="space-y-2.5 text-stone-600">
-                <li class="flex justify-between border-b border-[#fdf8f6] pb-2">
-                  <span>Zonas Pequenas (Buço, Queixo, Axilas, Linha Alba)</span> 
-                  <strong class="text-stone-800">€ 15,00 - € 25,00</strong>
+              <ul class="space-y-4 text-stone-600">
+                
+                <!-- LÓGICA APLICADA: flex-row, gap-4 de segurança, flex-1 para texto, whitespace-nowrap para preço -->
+                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
+                  <span class="flex-1 leading-snug">Zonas Pequenas <span class="block text-xs text-stone-400 mt-0.5">(Buço, Queixo, Axilas, Linha Alba)</span></span> 
+                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 15,00 - € 25,00</strong>
                 </li>
-                <li class="flex justify-between border-b border-[#fdf8f6] pb-2">
-                  <span>Zonas Médias / Grandes (Virilha Total, Meia Perna)</span> 
-                  <strong class="text-stone-800">€ 35,00 - € 60,00</strong>
+                
+                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
+                  <span class="flex-1 leading-snug">Zonas Médias / Grandes <span class="block text-xs text-stone-400 mt-0.5">(Virilha Total, Meia Perna)</span></span> 
+                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 35,00 - € 60,00</strong>
                 </li>
-                <li class="flex justify-between pt-1">
-                  <strong class="text-stone-800">Sessão Corpo Todo (Pacote Geral)</strong> 
-                  <strong class="text-[#c89d93]">€ 120,00</strong>
+                
+                <li class="flex flex-row justify-between items-center gap-4 pt-1 bg-[#fdf8f6] p-3 rounded-xl border border-[#e5d3cd]">
+                  <strong class="flex-1 text-stone-800 leading-snug">Sessão Corpo Todo <span class="block text-xs text-stone-500 font-normal mt-0.5">Pacote Geral Completo</span></strong> 
+                  <strong class="flex-none whitespace-nowrap text-[#c89d93] text-lg">€ 120,00</strong>
                 </li>
               </ul>
             </div>
 
-            <div class="card-crm space-y-3">
-              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-1">
+            <!-- Catálogo B: Estética Facial Especializada (Cátia) -->
+            <div class="card-crm space-y-4">
+              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-2 border-b border-[#f2e8e5] pb-2">
                 <span>✨</span> <span>Estética Facial (Tratamentos Cátia)</span>
               </h3>
-              <ul class="space-y-2.5 text-stone-600">
-                <li class="flex justify-between border-b border-[#fdf8f6] pb-2">
-                  <span>Limpeza de Pele Profunda + Hidratação Fisiológica</span> 
-                  <strong class="text-stone-800">€ 45,00</strong>
+              <ul class="space-y-4 text-stone-600">
+                
+                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
+                  <span class="flex-1 leading-snug">Limpeza de Pele Profunda <span class="block text-xs text-stone-400 mt-0.5">+ Hidratação Fisiológica</span></span> 
+                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 45,00</strong>
                 </li>
-                <li class="flex justify-between border-b border-[#fdf8f6] pb-2">
-                  <span>Protocolo Anti-Manchas & Acne (Peeling Suave)</span> 
-                  <strong class="text-stone-800">€ 55,00</strong>
+                
+                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
+                  <span class="flex-1 leading-snug">Protocolo Anti-Manchas & Acne <span class="block text-xs text-stone-400 mt-0.5">(Peeling Suave)</span></span> 
+                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 55,00</strong>
                 </li>
-                <li class="flex justify-between border-b border-[#fdf8f6] pb-2">
-                  <span>Microagulhamento / Renovação Dérmica</span> 
-                  <strong class="text-stone-800">€ 65,00</strong>
+                
+                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
+                  <span class="flex-1 leading-snug">Microagulhamento <span class="block text-xs text-stone-400 mt-0.5">Renovação Dérmica Avançada</span></span> 
+                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 65,00</strong>
                 </li>
               </ul>
             </div>
+            
           </div>
         </section>
-
         <!-- MÓDULO 5: DASHBOARD DE MÉTRICAS -->
         <section id="sec-dashboard" class="hidden space-y-4">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
