@@ -1,501 +1,675 @@
 <!DOCTYPE html>
-<html lang="pt-PT" class="dark">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Operação GL | CRM & Gestão Estética Avançada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM & Agenda • Operação GL</title>
   
-  <!-- Tipografia Inter & Tailwind CSS via CDN -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- TAILWIND CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              50: '#fdf8f6',
+              100: '#f2e8e5',
+              200: '#e5d3cd',
+              300: '#d8bdbe',
+              400: '#ccaaad',
+              500: '#c89d93', // Rosa seco principal
+              600: '#b58479',
+              700: '#96675d',
+              800: '#784d44',
+              900: '#5c3830'
+            }
+          }
         }
       }
     }
   </script>
-
-  <!-- Lucide Icons & Alpine.js (Motor Reativo sem necessidade de Build) -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   
-  <!-- Supabase Client JS CDN -->
+  <!-- SUPABASE JS CLIENT SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+  
+  <!-- FULLCALENDAR CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  
+  <!-- ESTILOS COMPLEMENTARES E CUSTOMIZAÇÃO DE UX -->
   <style>
-    body { background-color: #090d16; color: #f8fafc; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+    /* Otimização de Scrollbars */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Tooltips Informativos (ⓘ) */
+    .has-tooltip { position: relative; display: inline-block; cursor: pointer; }
+    .tooltip-box {
+      visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out;
+      position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+      width: 240px; background-color: #27272a; color: #ffffff; text-align: left;
+      padding: 10px 14px; border-radius: 10px; font-size: 11px; z-index: 50; line-height: 1.4;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+    .has-tooltip:hover .tooltip-box { visibility: visible; opacity: 1; }
+    
+    /* FullCalendar Customization */
+    .fc { font-family: inherit; font-size: 0.85rem; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #f2e8e5 !important; }
+    .fc-button-primary { background-color: #c89d93 !important; border-color: #c89d93 !important; border-radius: 0.75rem !important; text-transform: capitalize !important; }
+    .fc-button-primary:hover { background-color: #b58479 !important; }
+    .fc-timegrid-slot { height: 2.8em !important; }
+    
+    /* Safe Area Padding para Dispositivos Móveis */
+    .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
   </style>
 </head>
-<body x-data="crmApp()" x-init="initApp()" class="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center">
+<body class="bg-[#f3f0ec] text-stone-800 font-sans antialiased min-h-screen flex justify-center items-start">
 
-  <!-- TOPBAR DE NAVEGAÇÃO -->
-  <header class="w-full bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 p-3 flex items-center justify-between sticky top-0 z-40">
-    <div className="flex items-center gap-2">
-      <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" title="Base de Dados Ativa"></span>
-      <span class="font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-purple-400 to-indigo-400 text-base">
-        Operação GL
-      </span>
-      <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md font-mono border border-slate-700">CRM v2.0</span>
-    </div>
+  <!-- NOTIFICAÇÕES TOAST GLOBAIS -->
+  <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl text-xs font-bold shadow-2xl transition-all duration-300 text-center"></div>
 
-    <!-- SELETOR DE VISÃO (MOBILE VS DESKTOP WIDESCREEN) -->
-    <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
-      <button 
-        @click="devicePreview = 'mobile'" 
-        :class="devicePreview === 'mobile' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" 
-        class="p-1.5 rounded-lg transition-all flex items-center gap-1 text-xs font-medium"
-        title="Visão Telemóvel"
-      >
-        <i data-lucide="smartphone" class="w-4 h-4"></i>
-      </button>
-      <button 
-        @click="devicePreview = 'desktop'" 
-        :class="devicePreview === 'desktop' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'" 
-        class="p-1.5 rounded-lg transition-all flex items-center gap-1 text-xs font-medium"
-        title="Visão Desktop Widescreen"
-      >
-        <i data-lucide="monitor" class="w-4 h-4"></i>
-      </button>
-    </div>
-  </header>
+  <!-- CONTAINER DE LAYOUT DUAL (RESPONSIVIDADE WIDESCREEN vs MOBILE) -->
+  <div id="main-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300">
 
-  <!-- PAINEL PRINCIPAL -->
-  <main 
-    :class="devicePreview === 'mobile' 
-      ? 'max-w-md my-0 sm:my-4 border-0 sm:border border-slate-800 rounded-none sm:rounded-3xl shadow-2xl overflow-hidden' 
-      : 'max-w-5xl p-6 my-4 border border-slate-800/60 rounded-3xl shadow-2xl'"
-    class="w-full transition-all duration-300 bg-slate-900/60"
-  >
-    <!-- DASHBOARD DE MÉTRICAS RÁPIDAS -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 bg-slate-950/80 border-b border-slate-800/80 text-xs">
-      <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-        <span class="text-slate-400 block text-[10px]">Atendimentos Hoje</span>
-        <strong class="text-white text-sm font-bold" x-text="appointments.length"></strong>
-      </div>
-      <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-        <span class="text-slate-400 block text-[10px]">Faturamento Previsto</span>
-        <strong class="text-emerald-400 text-sm font-bold" x-text="'€ ' + calculateRevenue()"></strong>
-      </div>
-      <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-        <span class="text-slate-400 block text-[10px]">Laser vs Facial</span>
-        <strong class="text-rose-400 text-sm font-bold" x-text="countLaser() + ' L / ' + countFacial() + ' F'"></strong>
-      </div>
-      <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-xl">
-        <span class="text-slate-400 block text-[10px]">Alertas Clínicos</span>
-        <strong class="text-amber-400 text-sm font-bold" x-text="countAlerts()"></strong>
-      </div>
-    </div>
-
-    <!-- STORIES BAR (ATENDIMENTOS DO DIA ESTILO INSTAGRAM) -->
-    <div class="w-full bg-slate-900/90 border-b border-slate-800 p-3 overflow-x-auto no-scrollbar flex items-center gap-4">
-      <button @click="selectedStoryId = null" class="flex flex-col items-center gap-1 shrink-0 focus:outline-none">
-        <div :class="selectedStoryId === null ? 'border-rose-500 ring-2 ring-rose-500/40' : 'border-slate-700'" class="p-0.5 rounded-full border-2 transition-all">
-          <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-rose-400">
-            <i data-lucide="sparkles" class="w-5 h-5"></i>
-          </div>
+    <!-- =================================================================== -->
+    <!-- SECÇÃO 1: TELA DE LOGIN SEGURO (AUTOCOMPLETE & SAVE PASSWORD)      -->
+    <!-- =================================================================== -->
+    <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 bg-white">
+      <div class="w-full max-w-sm space-y-6">
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto shadow-lg">GL</div>
+          <h1 class="text-2xl font-bold text-stone-800 tracking-tight">Operação GL</h1>
+          <p class="text-xs text-stone-500 font-medium">CRM & Gestão Estética Avançada</p>
         </div>
-        <span class="text-[10px] font-medium text-slate-300">Todas</span>
-      </button>
 
-      <template x-for="item in appointments" :key="item.id">
-        <button @click="selectedStoryId = (selectedStoryId === item.id ? null : item.id)" class="flex flex-col items-center gap-1 shrink-0 focus:outline-none">
-          <div :class="[getStatusBorder(item.status), selectedStoryId === item.id ? 'scale-110 ring-2 ring-rose-500' : '']" class="p-0.5 rounded-full border-2 transition-all relative">
-            <img :src="item.clientAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(item.clientName)" class="w-12 h-12 rounded-full bg-slate-800 object-cover" />
-            <template x-if="item.status === 'alerta_clinico'">
-              <span class="absolute -top-1 -right-1 bg-amber-500 text-slate-950 p-0.5 rounded-full shadow-lg">
-                <i data-lucide="alert-circle" class="w-3 h-3"></i>
-              </span>
-            </template>
+        <!-- Formulário preparado para Gestores de Senha do Navegador -->
+        <form id="login-form" method="POST" onsubmit="Auth.handleLogin(event)" class="space-y-4">
+          <div>
+            <label for="login-username" class="block text-xs font-semibold text-stone-700 mb-1">Utilizador ou E-mail</label>
+            <input 
+              type="text" 
+              id="login-username" 
+              name="username" 
+              required 
+              autocomplete="username" 
+              class="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition shadow-xs" 
+              placeholder="Gabyzinha ou e-mail" 
+            />
           </div>
-          <span class="text-[10px] font-medium text-slate-300 max-w-[64px] truncate" x-text="item.clientName.split(' ')"></span>
-          <span class="text-[9px] font-mono text-slate-500" x-text="item.time"></span>
-        </button>
-      </template>
+
+          <div>
+            <label for="login-password" class="block text-xs font-semibold text-stone-700 mb-1">Palavra-passe</label>
+            <input 
+              type="password" 
+              id="login-password" 
+              name="password" 
+              required 
+              autocomplete="current-password" 
+              class="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500 transition shadow-xs" 
+              placeholder="••••••••" 
+            />
+          </div>
+
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center space-x-2 cursor-pointer text-stone-600">
+              <input type="checkbox" id="remember-me" name="remember_me" checked class="rounded border-brand-200 text-brand-500 focus:ring-brand-500 w-4 h-4" />
+              <span>Mantenha-me conectado</span>
+            </label>
+            <button type="button" onclick="Auth.showRecoveryView()" class="text-brand-600 font-semibold hover:underline">Recuperar acesso</button>
+          </div>
+
+          <button type="submit" id="btn-login" class="w-full py-4 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-xs sm:text-sm">
+            Entrar no CRM Operação GL
+          </button>
+        </form>
+      </div>
     </div>
 
-    <!-- TABS DE NAVEGAÇÃO: FEED VS CALENDÁRIO -->
-    <div class="p-3 flex gap-2 bg-slate-900/50 border-b border-slate-800">
-      <button 
-        @click="viewMode = 'feed'" 
-        :class="viewMode === 'feed' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/30' : 'bg-slate-800/60 text-slate-400 hover:text-white'" 
-        class="flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
-      >
-        <i data-lucide="layout-grid" class="w-4 h-4"></i> Feed Cronológico
-      </button>
-      <button 
-        @click="viewMode = 'calendar'" 
-        :class="viewMode === 'calendar' ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/30' : 'bg-slate-800/60 text-slate-400 hover:text-white'" 
-        class="flex-1 py-2 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all"
-      >
-        <i data-lucide="calendar" class="w-4 h-4"></i> Grade de Horários
-      </button>
+    <!-- =================================================================== -->
+    <!-- SECÇÃO 2: RECUPERAÇÃO DE ACESSO VIA CÓDIGO TEMPORÁRIO (OTP)         -->
+    <!-- =================================================================== -->
+    <div id="view-recovery" class="hidden flex-1 flex flex-col justify-center items-center p-6 bg-white space-y-6">
+      <div class="w-full max-w-sm space-y-4">
+        <h2 class="text-xl font-bold text-stone-800">Recuperar Palavra-passe</h2>
+        <p class="text-xs text-stone-500">Introduza o e-mail registado para receber o código de validação de 6 dígitos.</p>
+        
+        <form onsubmit="Auth.handleSendRecoveryCode(event)" class="space-y-4 text-xs">
+          <div>
+            <label class="block font-semibold text-stone-700 mb-1">E-mail de Acesso</label>
+            <input type="email" id="recovery-email" required class="w-full p-3.5 text-xs sm:text-sm rounded-xl border border-brand-100 bg-brand-50/30 focus:outline-none focus:border-brand-500" placeholder="gabyzinha@operacaogl.pt" />
+          </div>
+          <button type="submit" class="w-full py-3.5 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition text-xs sm:text-sm">
+            Enviar Código de Segurança
+          </button>
+          <button type="button" onclick="Auth.showLoginView()" class="w-full text-center text-stone-400 hover:text-stone-600 font-semibold text-xs">
+            ← Voltar ao Login
+          </button>
+        </form>
+      </div>
     </div>
 
-    <!-- CONTEÚDO PRINCIPAL (FEED DE SESSÕES) -->
-    <div class="p-4 bg-slate-950 min-h-[480px]">
-      <template x-if="viewMode === 'feed'">
-        <div>
-          <template x-for="app in filteredAppointments" :key="app.id">
-            <article class="bg-slate-900 border border-slate-800/80 rounded-2xl p-4 mb-4 shadow-xl hover:border-slate-700 transition-all">
-              <!-- Topo do Card -->
-              <div class="flex justify-between items-center mb-3">
-                <div class="flex items-center gap-3">
-                  <img :src="app.clientAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + encodeURIComponent(app.clientName)" class="w-10 h-10 rounded-full bg-slate-800" />
-                  <div>
-                    <h3 class="font-bold text-white text-sm" x-text="app.clientName"></h3>
-                    <p class="text-xs text-rose-400 font-medium" x-text="app.serviceName"></p>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-xs font-mono font-bold text-slate-300 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-full flex items-center gap-1">
-                    <i data-lucide="clock" class="w-3 h-3 text-rose-400"></i>
-                    <span x-text="app.time"></span>
-                  </span>
-                </div>
-              </div>
-
-              <!-- Ficha de Anamnese & Fitzpatrick -->
-              <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80 text-xs space-y-2 mb-3">
-                <div class="flex justify-between items-center">
-                  <span class="text-slate-400 flex items-center gap-1">
-                    <i data-lucide="user-check" class="w-3.5 h-3.5 text-purple-400"></i> Fototipo Fitzpatrick:
-                  </span>
-                  <span class="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded font-bold border border-purple-500/30" x-text="'Tipo ' + app.anamnesis.fitzpatrick"></span>
-                </div>
-
-                <template x-if="app.anamnesis.usesPhotosensitiveAcids">
-                  <div class="flex items-center gap-1.5 text-amber-400 bg-amber-500/10 p-2 rounded-lg border border-amber-500/20 font-semibold text-[11px]">
-                    <i data-lucide="shield-alert" class="w-4 h-4 shrink-0"></i>
-                    <span>Atenção: Uso de Medicamentos / Ácidos Fotossensibilizantes</span>
-                  </div>
-                </template>
-              </div>
-
-              <!-- Parâmetros do Equipamento Laser -->
-              <template x-if="app.laserParams">
-                <div class="bg-slate-950/90 p-3 rounded-xl border border-slate-800 text-xs mb-3 space-y-2">
-                  <div class="flex items-center justify-between text-rose-400 font-bold">
-                    <span class="flex items-center gap-1 uppercase tracking-wider text-[10px]">
-                      <i data-lucide="zap" class="w-3.5 h-3.5"></i> Parâmetros Técnicos do Laser
-                    </span>
-                    <span class="text-[10px] text-slate-500 font-mono" x-text="app.laserParams.fluenceJcm2 + ' J/cm²'"></span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-slate-300">
-                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between">
-                      <span class="text-slate-400">Fluência:</span>
-                      <strong class="text-white font-mono" x-text="app.laserParams.fluenceJcm2 + ' J/cm²'"></strong>
-                    </div>
-                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between">
-                      <span class="text-slate-400">Pulso:</span>
-                      <strong class="text-white font-mono" x-text="app.laserParams.pulseMs + ' ms'"></strong>
-                    </div>
-                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between">
-                      <span class="text-slate-400">Disparos:</span>
-                      <strong class="text-white font-mono" x-text="app.laserParams.totalShots"></strong>
-                    </div>
-                    <div class="bg-slate-900 p-2 rounded-lg border border-slate-800 flex justify-between">
-                      <span class="text-slate-400">Spot Size:</span>
-                      <strong class="text-white font-mono" x-text="app.laserParams.spotSizeMm + ' mm'"></strong>
-                    </div>
-                  </div>
-                </div>
-              </template>
-
-              <!-- Ações no Card -->
-              <div class="flex justify-between items-center pt-2 border-t border-slate-800/80">
-                <button @click="openEditModal(app)" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
-                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Editar Ficha
-                </button>
-                <button 
-                  @click="toggleStatus(app)" 
-                  :class="app.status === 'concluido' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-emerald-600 hover:bg-emerald-500 text-white'" 
-                  class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all"
-                >
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
-                  <span x-text="app.status === 'concluido' ? 'Sessão Concluída' : 'Concluir Atendimento'"></span>
-                </button>
-              </div>
-            </article>
-          </template>
-        </div>
-      </template>
-
-      <!-- GRADE DE CALENDÁRIO INTERATIVO -->
-      <template x-if="viewMode === 'calendar'">
-        <div class="space-y-2">
-          <p class="text-xs text-slate-400 mb-3 flex items-center gap-1">
-            <i data-lucide="info" class="w-3.5 h-3.5 text-rose-400"></i> Clique em qualquer slot vago para agendar uma cliente:
-          </p>
-          <template x-for="slot in timeSlots" :key="slot">
-            <div 
-              @click="handleSlotClick(slot)" 
-              :class="isSlotBooked(slot) ? 'bg-slate-800/50 border-slate-700/60 cursor-default' : 'bg-slate-950 border-slate-800 hover:border-rose-500 cursor-pointer hover:bg-slate-900/60'" 
-              class="p-3 rounded-xl border flex justify-between items-center transition-all"
-            >
-              <span class="text-xs font-bold text-rose-400 font-mono" x-text="slot"></span>
-              <template x-if="isSlotBooked(slot)">
-                <div class="flex items-center gap-2">
-                  <span class="text-xs text-white font-medium" x-text="getSlotAppointment(slot).clientName"></span>
-                  <span class="text-[10px] px-2 py-0.5 bg-rose-500/20 text-rose-300 rounded border border-rose-500/30" x-text="getSlotAppointment(slot).serviceName"></span>
-                </div>
-              </template>
-              <template x-if="!isSlotBooked(slot)">
-                <span class="text-xs text-slate-500 flex items-center gap-1">
-                  <i data-lucide="plus" class="w-3.5 h-3.5 text-rose-400"></i> Slot Livre - Agendar
-                </span>
-              </template>
+    <!-- =================================================================== -->
+    <!-- SECÇÃO 3: PAINEL PRINCIPAL DO CRM (ÁREA PROTEGIDA)                  -->
+    <!-- =================================================================== -->
+    <div id="view-app" class="hidden flex-1 flex flex-col h-full relative">
+      
+      <!-- TOPBAR FIXA COM SELETOR DE MODO -->
+      <header class="bg-white/95 backdrop-blur-md sticky top-0 z-30 px-5 py-3 border-b border-brand-100 flex flex-col space-y-3 shadow-xs">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-brand-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">GL</div>
+            <div>
+              <span class="block font-bold text-sm tracking-tight text-stone-800">Operação GL</span>
+              <span id="sync-status" class="block text-xs font-semibold text-emerald-600">● Base de Dados Ativa</span>
             </div>
-          </template>
-        </div>
-      </template>
-    </div>
-  </main>
-
-  <!-- MODAL DE CRIAÇÃO / EDIÇÃO DE AGENDAMENTO -->
-  <div x-show="isModalOpen" x-cloak class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
-      <div class="p-4 border-b border-slate-800 flex justify-between items-center">
-        <h3 class="text-sm font-bold text-white flex items-center gap-2">
-          <i data-lucide="zap" class="w-4 h-4 text-rose-400"></i>
-          <span x-text="editingId ? 'Editar Ficha e Parâmetros' : 'Novo Agendamento'"></span>
-        </h3>
-        <button @click="isModalOpen = false" class="text-slate-400 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <form @submit.prevent="saveForm()" class="p-4 space-y-3 text-xs max-h-[80vh] overflow-y-auto">
-        <div>
-          <label class="block text-slate-400 mb-1">Nome da Cliente</label>
-          <input type="text" x-model="form.clientName" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none focus:border-rose-500" placeholder="Ex: Ana Silva" />
-        </div>
-
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-slate-400 mb-1">Categoria de Serviço</label>
-            <select x-model="form.serviceCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none">
-              <option value="laser">⚡ Depilação a Laser</option>
-              <option value="facial_catia">✨ Estética Facial (Cátia)</option>
-            </select>
           </div>
-          <div>
-            <label class="block text-slate-400 mb-1">Horário</label>
-            <input type="text" x-model="form.time" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono outline-none" />
+          
+          <div class="flex items-center space-x-2">
+            <!-- Alternador de Visualização em Tempo Real (Desktop vs Mobile) -->
+            <button onclick="UI.toggleLayoutMode()" id="btn-view-mode" class="text-xs bg-brand-50 hover:bg-brand-100 text-brand-700 px-3 py-2 rounded-xl border border-brand-200 font-bold transition flex items-center space-x-1">
+              <span id="view-mode-icon">🖥️</span> <span id="view-mode-label">Ver Computador</span>
+            </button>
+            <button onclick="Auth.handleLogout()" class="text-xs text-rose-600 font-bold px-3 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-100 transition">Sair</button>
           </div>
         </div>
 
-        <div>
-          <label class="block text-slate-400 mb-1">Procedimento / Zona</label>
-          <input type="text" x-model="form.serviceName" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white outline-none" placeholder="Ex: Sessão Corpo Todo ou Limpeza Profunda" />
-        </div>
+        <!-- Separadores Principais de Módulos do CRM -->
+        <nav class="flex space-x-1 overflow-x-auto no-scrollbar pt-1 text-xs font-bold">
+          <button onclick="UI.switchTab('agenda')" id="tab-agenda" class="px-3.5 py-2 rounded-xl bg-brand-500 text-white shadow-xs whitespace-nowrap">📅 Agenda & Calendário</button>
+          <button onclick="UI.switchTab('clientes')" id="tab-clientes" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">👤 Clientes & Anamnese</button>
+          <button onclick="UI.switchTab('laser')" id="tab-laser" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">⚡ Parâmetros Laser</button>
+          <button onclick="UI.switchTab('catalogo')" id="tab-catalogo" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">✨ Catálogo & Preços</button>
+          <button onclick="UI.switchTab('dashboard')" id="tab-dashboard" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap">📊 Métricas & Cross-Sell</button>
+        </nav>
+      </header>
 
-        <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-          <h4 class="font-bold text-rose-400">Anamnese Clínica</h4>
+      <!-- ÁREA DINÂMICA DE CONTEÚDO DOS MÓDULOS -->
+      <main class="flex-1 overflow-y-auto p-4 space-y-5">
+
+        <!-- MÓDULO 1: AGENDA, FEED CRONOLÓGICO & CALENDÁRIO COM SELEÇÃO DE SLOT -->
+        <section id="sec-agenda" class="space-y-4">
+          <!-- Stories com Atendimentos do Dia -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs">
+            <p class="text-xs font-bold uppercase text-stone-400 tracking-wider mb-2.5">Atendimentos do Dia</p>
+            <div id="stories-container" class="flex space-x-4 overflow-x-auto no-scrollbar pb-1"></div>
+          </div>
+
+          <div class="flex justify-between items-center px-1">
+            <h2 class="text-base font-bold text-stone-800">Feed Cronológico</h2>
+            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-xs transition">+ Novo Agendamento</button>
+          </div>
+
+          <div id="feed-container" class="space-y-3"></div>
+          
+          <!-- Calendário Interativo com Seleção de Intervalo/Slot -->
+          <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-bold text-stone-800">Calendário de Atendimentos</h3>
+              <span class="text-xs text-stone-400">Clique em qualquer slot para agendar</span>
+            </div>
+            <div id="calendar"></div>
+          </div>
+        </section>
+
+        <!-- MÓDULO 2: BASE DE CLIENTES & ANAMNESE CLÍNICA COMPLETA -->
+        <section id="sec-clientes" class="hidden space-y-4">
           <div class="flex justify-between items-center">
-            <span class="text-slate-300">Fototipo Fitzpatrick:</span>
-            <select x-model="form.fitzpatrick" class="bg-slate-900 border border-slate-700 rounded-lg p-1 text-purple-300 font-bold">
-              <option value="I">Tipo I</option>
-              <option value="II">Tipo II</option>
-              <option value="III">Tipo III</option>
-              <option value="IV">Tipo IV</option>
-              <option value="V">Tipo V</option>
-              <option value="VI">Tipo VI</option>
-            </select>
+            <div>
+              <h2 class="text-base font-bold text-stone-800">Fichas de Clientes & Anamnese</h2>
+              <p class="text-xs text-stone-400">Histórico de contacto, morada, fototipo e alertas médicos</p>
+            </div>
+            <button onclick="UI.openModal()" class="bg-brand-500 hover:bg-brand-600 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-xs">+ Cadastrar Cliente</button>
           </div>
-          <label class="flex items-center gap-2 text-slate-300 cursor-pointer pt-1">
-            <input type="checkbox" x-model="form.usesAcids" class="rounded border-slate-700 text-rose-500" />
-            Uso de Medicamentos / Ácidos Fotossensibilizantes
-          </label>
-        </div>
+          <div id="clientes-list" class="space-y-3"></div>
+        </section>
 
-        <template x-if="form.serviceCategory === 'laser'">
-          <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-            <h4 class="font-bold text-rose-400">Parâmetros do Equipamento Laser</h4>
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <span class="text-slate-400 block mb-1">Fluência (J/cm²)</span>
-                <input type="number" x-model="form.fluence" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-mono" />
-              </div>
-              <div>
-                <span class="text-slate-400 block mb-1">Pulso (ms)</span>
-                <input type="number" x-model="form.pulse" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-mono" />
-              </div>
-              <div>
-                <span class="text-slate-400 block mb-1">Disparos</span>
-                <input type="number" x-model="form.shots" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-1.5 text-white font-mono" />
-              </div>
+        <!-- MÓDULO 3: HISTÓRICO TÉCNICO DE PARÂMETROS DO LASER POR SESSÃO -->
+        <section id="sec-laser" class="hidden space-y-4">
+          <div>
+            <h2 class="text-base font-bold text-stone-800">Parâmetros das Máquinas de Laser</h2>
+            <p class="text-xs text-stone-400">Registo técnico por sessão de fluência ($J/cm²$), pulso ($ms$), spot e disparos</p>
+          </div>
+          <div id="laser-list" class="space-y-3"></div>
+        </section>
+
+        <!-- MÓDULO 4: CATÁLOGO DUPLO (LASER + ESTÉTICA FACIAL) -->
+        <section id="sec-catalogo" class="hidden space-y-4">
+          <h2 class="text-base font-bold text-stone-800">Catálogo Oficial de Procedimentos</h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Catálogo A: Depilação a Laser -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-100 space-y-3 shadow-xs">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-1">
+                <span>⚡</span> <span>Depilação a Laser (Zonas & Corpo Todo)</span>
+              </h3>
+              <ul class="text-xs space-y-2.5 text-stone-600">
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Zonas Pequenas (Buço, Queixo, Axilas, Linha Alba)</span> 
+                  <span class="font-bold text-stone-800">€ 15,00 - € 25,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Zonas Médias / Grandes (Virilha Total, Meia Perna, Coxas)</span> 
+                  <span class="font-bold text-stone-800">€ 35,00 - € 60,00</span>
+                </li>
+                <li class="flex justify-between pt-1">
+                  <span class="font-bold text-stone-800">Sessão Corpo Todo (Pacote Geral)</span> 
+                  <span class="font-bold text-brand-600 text-sm">€ 120,00</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Catálogo B: Estética Facial Especializada (Cátia) -->
+            <div class="bg-white p-5 rounded-2xl border border-brand-100 space-y-3 shadow-xs">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-brand-600 flex items-center space-x-1">
+                <span>✨</span> <span>Estética Facial (Tratamentos Cátia)</span>
+              </h3>
+              <ul class="text-xs space-y-2.5 text-stone-600">
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Limpeza de Pele Profunda + Hidratação Fisiológica</span> 
+                  <span class="font-bold text-stone-800">€ 45,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Protocolo Anti-Manchas & Acne (Peeling Suave)</span> 
+                  <span class="font-bold text-stone-800">€ 55,00</span>
+                </li>
+                <li class="flex justify-between border-b border-brand-50 pb-2">
+                  <span>Microagulhamento / Renovação Dérmica</span> 
+                  <span class="font-bold text-stone-800">€ 65,00</span>
+                </li>
+                <li class="flex justify-between pt-1">
+                  <span>Avaliação e Diagnóstico Fisiológico Dérmico</span> 
+                  <span class="font-bold text-brand-600 text-sm">€ 30,00</span>
+                </li>
+              </ul>
             </div>
           </div>
-        </template>
+        </section>
 
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" @click="isModalOpen = false" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancelar</button>
-          <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold">Salvar Registos</button>
+        <!-- MÓDULO 5: DASHBOARD DE MÉTRICAS & OPORTUNIDADES DE CROSS-SELL -->
+        <section id="sec-dashboard" class="hidden space-y-4">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
+              <p class="text-xs font-bold uppercase text-stone-400">Total Clientes</p>
+              <p class="text-2xl font-bold text-stone-800" id="dash-total-clientes">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
+              <p class="text-xs font-bold uppercase text-stone-400">Oportunidades Facial</p>
+              <p class="text-2xl font-bold text-brand-600" id="dash-cross-sell">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
+              <p class="text-xs font-bold uppercase text-stone-400">Previsão Faturamento</p>
+              <p class="text-2xl font-bold text-stone-800" id="dash-faturamento">€ 0,00</p>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-brand-100 shadow-xs space-y-1">
+              <p class="text-xs font-bold uppercase text-stone-400">Sessões Laser</p>
+              <p class="text-2xl font-bold text-brand-500" id="dash-retornos">0</p>
+            </div>
+          </div>
+        </section>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL DE FICHA TÉCNICA, ANAMNESE E PARÂMETROS CLINICOS               -->
+  <!-- =================================================================== -->
+  <div id="modal-agendamento" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 border border-brand-100 text-xs max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-brand-50 pb-3">
+        <h3 id="modal-title" class="font-bold text-base text-stone-800">Ficha de Agendamento & Anamnese</h3>
+        <button onclick="UI.closeModal()" class="text-stone-400 hover:text-stone-700 text-xl font-bold bg-stone-100 w-8 h-8 rounded-full flex items-center justify-center">&times;</button>
+      </div>
+
+      <form id="form-agendamento" onsubmit="Controllers.saveData(event)" class="space-y-4">
+        <input type="hidden" id="edit-id" value="" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-stone-700 mb-1">Nome Completo *</label>
+            <input type="text" id="input-nome" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: Ana Silva" />
+          </div>
+          <div>
+            <label class="block font-semibold text-stone-700 mb-1">WhatsApp / Telefone *</label>
+            <input type="text" id="input-telefone" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Ex: 920465838" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-stone-700 mb-1">Data e Hora *</label>
+          <input type="datetime-local" id="input-data" required class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20 font-mono" />
+        </div>
+
+        <!-- Seleção Integrada do Catálogo Duplo -->
+        <div>
+          <label class="block font-semibold text-stone-700 mb-1">Procedimento / Tratamento *</label>
+          <select id="select-procedimento" onchange="Controllers.handleProcedimentoSelect(this.value)" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20 font-medium">
+            <optgroup label="⚡ Depilação a Laser">
+              <option value="Laser - Zonas Pequenas (Buço/Axilas)">Laser - Zonas Pequenas (Buço/Axilas)</option>
+              <option value="Laser - Zonas Grandes (Virilha/Pernas)">Laser - Zonas Grandes (Virilha/Pernas)</option>
+              <option value="Laser - Corpo Todo">Laser - Corpo Todo</option>
+            </optgroup>
+            <optgroup label="✨ Estética Facial (Cátia)">
+              <option value="Facial - Limpeza de Pele Profunda">Facial - Limpeza de Pele Profunda</option>
+              <option value="Facial - Tratamento Acne/Manchas">Facial - Tratamento Acne/Manchas</option>
+              <option value="Facial - Microagulhamento">Facial - Microagulhamento</option>
+            </optgroup>
+            <option value="outro">✍️ Outro (Digitar Manualmente...)</option>
+          </select>
+        </div>
+
+        <div id="box-procedimento-manual" class="hidden">
+          <label class="block font-semibold text-stone-700 mb-1">Procedimento Customizado</label>
+          <input type="text" id="input-zonas-manual" class="w-full p-3 text-sm rounded-xl border border-brand-100 bg-brand-50/20" placeholder="Digite o tratamento customizado" />
+        </div>
+
+        <!-- Módulo de Anamnese & Parâmetros da Máquina -->
+        <div class="border-t border-brand-100 pt-3 space-y-3">
+          <p class="font-bold text-brand-600 uppercase tracking-wider text-xs">⚡ Parâmetros do Laser & Anamnese</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold text-stone-700 mb-1">Fototipo Fitzpatrick</label>
+              <select id="input-fototipo" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20">
+                <option value="III">Fototipo III - Morena Clara</option>
+                <option value="I">Fototipo I - Muito Clara</option>
+                <option value="II">Fototipo II - Clara</option>
+                <option value="IV">Fototipo IV - Morena Média</option>
+                <option value="V">Fototipo V - Escura</option>
+                <option value="VI">Fototipo VI - Negra</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-semibold text-stone-700 mb-1">
+                Fluência ($J/cm²$)
+                <span class="has-tooltip text-brand-500">ⓘ<span class="tooltip-box">Quantidade de energia emitida por disparo por $cm²$.</span></span>
+              </label>
+              <input type="number" step="0.1" id="input-fluencia" class="w-full p-2.5 text-xs rounded-xl border border-brand-100 bg-brand-50/20" placeholder="18" />
+            </div>
+          </div>
+        </div>
+
+        <div class="flex space-x-2 pt-3">
+          <button type="button" onclick="UI.closeModal()" class="w-1/3 py-3.5 rounded-xl font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 transition text-xs">Cancelar</button>
+          <button type="submit" id="btn-submit" class="w-2/3 py-3.5 rounded-xl bg-brand-500 text-white font-bold hover:bg-brand-600 transition shadow-md text-xs">Salvar no CRM</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- SCRIPT ALPINE.JS E LÓGICA DO CRM -->
+  <!-- =================================================================== -->
+  <!-- ENGINE JAVASCRIPT: LÓGICA DE DADOS, AUTENTICAÇÃO E RENDERIZAÇÃO     -->
+  <!-- =================================================================== -->
   <script>
-    function crmApp() {
-      return {
-        devicePreview: 'mobile',
-        viewMode: 'feed',
-        selectedStoryId: null,
-        isModalOpen: false,
-        editingId: null,
-        timeSlots: ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
-        
-        form: {
-          clientName: '',
-          serviceCategory: 'laser',
-          serviceName: 'Sessão Corpo Todo (Pacote Geral)',
-          time: '09:00',
-          fitzpatrick: 'III',
-          usesAcids: false,
-          price: 120,
-          fluence: 18,
-          pulse: 25,
-          shots: 1200
-        },
-
-        appointments: [
-          {
-            id: '1',
-            clientName: 'Ana Silva',
-            serviceCategory: 'laser',
-            serviceName: 'Sessão Corpo Todo (Pacote Geral)',
-            price: 120,
-            time: '09:00',
-            status: 'alerta_clinico',
-            laserParams: { fluenceJcm2: 18, pulseMs: 25, totalShots: 1200, spotSizeMm: 12 },
-            anamnesis: { fitzpatrick: 'III', usesPhotosensitiveAcids: true }
-          },
-          {
-            id: '2',
-            clientName: 'Carla Santos',
-            serviceCategory: 'facial_catia',
-            serviceName: 'Limpeza de Pele Profunda + Hidratação (Cátia)',
-            price: 45,
-            time: '11:00',
-            status: 'confirmada',
-            anamnesis: { fitzpatrick: 'II', usesPhotosensitiveAcids: false }
-          },
-          {
-            id: '3',
-            clientName: 'Mariana Costa',
-            serviceCategory: 'laser',
-            serviceName: 'Depilação Laser - Zonas Médias/Grandes',
-            price: 45,
-            time: '14:00',
-            status: 'pos_laser_pendente',
-            laserParams: { fluenceJcm2: 20, pulseMs: 30, totalShots: 1600, spotSizeMm: 15 },
-            anamnesis: { fitzpatrick: 'IV', usesPhotosensitiveAcids: false }
-          }
-        ],
-
-        initApp() {
-          this.$nextTick(() => { lucide.createIcons(); });
-        },
-
-        get filteredAppointments() {
-          if (this.selectedStoryId) {
-            return this.appointments.filter(a => a.id === this.selectedStoryId);
-          }
-          return this.appointments;
-        },
-
-        calculateRevenue() {
-          return this.appointments.reduce((acc, curr) => acc + (curr.price || 45), 0);
-        },
-
-        countLaser() { return this.appointments.filter(a => a.serviceCategory === 'laser').length; },
-        countFacial() { return this.appointments.filter(a => a.serviceCategory === 'facial_catia').length; },
-        countAlerts() { return this.appointments.filter(a => a.anamnesis.usesPhotosensitiveAcids).length; },
-
-        getStatusBorder(status) {
-          if (status === 'alerta_clinico') return 'border-amber-500 bg-amber-500/10 text-amber-400 animate-pulse';
-          if (status === 'concluido') return 'border-emerald-500 bg-emerald-500/10 text-emerald-400';
-          if (status === 'pos_laser_pendente') return 'border-purple-500 bg-purple-500/10 text-purple-400';
-          return 'border-blue-500 bg-blue-500/10 text-blue-400';
-        },
-
-        toggleStatus(app) {
-          app.status = app.status === 'concluido' ? 'confirmada' : 'concluido';
-        },
-
-        isSlotBooked(slot) { return this.appointments.some(a => a.time === slot); },
-        getSlotAppointment(slot) { return this.appointments.find(a => a.time === slot); },
-
-        handleSlotClick(slot) {
-          if (this.isSlotBooked(slot)) return;
-          this.editingId = null;
-          this.form.clientName = '';
-          this.form.time = slot;
-          this.isModalOpen = true;
-          this.$nextTick(() => { lucide.createIcons(); });
-        },
-
-        openEditModal(app) {
-          this.editingId = app.id;
-          this.form.clientName = app.clientName;
-          this.form.serviceCategory = app.serviceCategory;
-          this.form.serviceName = app.serviceName;
-          this.form.time = app.time;
-          this.form.fitzpatrick = app.anamnesis.fitzpatrick;
-          this.form.usesAcids = app.anamnesis.usesPhotosensitiveAcids;
-          if (app.laserParams) {
-            this.form.fluence = app.laserParams.fluenceJcm2;
-            this.form.pulse = app.laserParams.pulseMs;
-            this.form.shots = app.laserParams.totalShots;
-          }
-          this.isModalOpen = true;
-          this.$nextTick(() => { lucide.createIcons(); });
-        },
-
-        saveForm() {
-          const newApp = {
-            id: this.editingId || String(Date.now()),
-            clientName: this.form.clientName,
-            serviceCategory: this.form.serviceCategory,
-            serviceName: this.form.serviceName,
-            price: this.form.serviceCategory === 'laser' ? 120 : 45,
-            time: this.form.time,
-            status: this.form.usesAcids ? 'alerta_clinico' : 'confirmada',
-            laserParams: this.form.serviceCategory === 'laser' ? {
-              fluenceJcm2: Number(this.form.fluence),
-              pulseMs: Number(this.form.pulse),
-              totalShots: Number(this.form.shots),
-              spotSizeMm: 12
-            } : null,
-            anamnesis: {
-              fitzpatrick: this.form.fitzpatrick,
-              usesPhotosensitiveAcids: this.form.usesAcids
-            }
-          };
-
-          if (this.editingId) {
-            const index = this.appointments.findIndex(a => a.id === this.editingId);
-            if (index !== -1) this.appointments[index] = newApp;
-          } else {
-            this.appointments.push(newApp);
-          }
-
-          this.isModalOpen = false;
-          this.$nextTick(() => { lucide.createIcons(); });
-        }
-      }
+    // 1. CONFIGURAÇÃO DAS CREDENCIAIS SUPABASE
+    const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
+    const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANONIMA-AQUI';
+    
+    let db = null;
+    if (SUPABASE_URL !== 'https://SEU-PROJETO.supabase.co') {
+      db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
+
+    // Estado da Aplicação (Single Source of Truth)
+    const State = { 
+      agendamentos: [], 
+      isDesktopLayout: false 
+    };
+
+    // 2. MÓDULO DE AUTENTICAÇÃO & SEGURANÇA (AUTH SERVICE)
+    const Auth = {
+      showAlert(msg, type = 'error') {
+        const box = document.getElementById('auth-alert');
+        box.className = `fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl text-xs font-bold shadow-2xl transition-all duration-300 text-center ${
+          type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+        }`;
+        box.innerText = msg;
+        box.classList.remove('hidden');
+        setTimeout(() => box.classList.add('hidden'), 3500);
+      },
+      showLoginView() {
+        document.getElementById('view-login').classList.remove('hidden');
+        document.getElementById('view-recovery').classList.add('hidden');
+        document.getElementById('view-app').classList.add('hidden');
+      },
+      showRecoveryView() {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-recovery').classList.remove('hidden');
+        document.getElementById('view-app').classList.add('hidden');
+      },
+      async handleLogin(e) {
+        e.preventDefault();
+        const userInput = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        
+        // Autenticação direta configurada para a Gabriela
+        if ((userInput.toLowerCase() === "gabyzinha" || userInput === "gabyzinha@operacaogl.pt") && password === "Gaby150405") {
+          Auth.showAlert("Bem-vinda à Operação GL, Gabriela!", "success");
+          this.loginSuccess();
+          return;
+        }
+
+        if (db) {
+          const { error } = await db.auth.signInWithPassword({ email: userInput, password });
+          if (!error) return this.loginSuccess();
+        }
+        Auth.showAlert("Erro de Acesso: Verifique o utilizador e a palavra-passe.", "error");
+      },
+      loginSuccess() {
+        document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('view-recovery').classList.add('hidden');
+        document.getElementById('view-app').classList.remove('hidden');
+        App.init();
+      },
+      async handleLogout() {
+        if (db) await db.auth.signOut();
+        this.showLoginView();
+      },
+      async handleSendRecoveryCode(e) {
+        e.preventDefault();
+        const email = document.getElementById('recovery-email').value.trim();
+        if (db) await db.auth.resetPasswordForEmail(email);
+        Auth.showAlert("Se o e-mail estiver registado, enviámos um código de verificação.", "success");
+        this.showLoginView();
+      }
+    };
+
+    // 3. CAMADA DE INTERFACE DE UTILIZADOR (UI CONTROLLER)
+    const UI = {
+      toggleLayoutMode() {
+        State.isDesktopLayout = !State.isDesktopLayout;
+        const container = document.getElementById('main-container');
+        const icon = document.getElementById('view-mode-icon');
+        const label = document.getElementById('view-mode-label');
+
+        if (State.isDesktopLayout) {
+          container.className = "w-full max-w-6xl bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300";
+          icon.innerText = "📱";
+          label.innerText = "Ver Telemóvel";
+        } else {
+          container.className = "w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300";
+          icon.innerText = "🖥️";
+          label.innerText = "Ver Computador";
+        }
+      },
+      switchTab(tab) {
+        ['agenda', 'clientes', 'laser', 'catalogo', 'dashboard'].forEach(t => {
+          document.getElementById(`sec-${t}`).classList.add('hidden');
+          document.getElementById(`tab-${t}`).className = "px-3.5 py-2 rounded-xl text-stone-500 hover:bg-brand-50 whitespace-nowrap";
+        });
+        document.getElementById(`sec-${tab}`).classList.remove('hidden');
+        document.getElementById(`tab-${tab}`).className = "px-3.5 py-2 rounded-xl bg-brand-500 text-white shadow-xs whitespace-nowrap";
+
+        if (tab === 'agenda') renderCalendar();
+      },
+      openModal(isEdit = false, selectedDateTime = null) {
+        document.getElementById('modal-title').innerText = isEdit ? "Editar Ficha no CRM" : "Novo Agendamento";
+        if (selectedDateTime) {
+          document.getElementById('input-data').value = selectedDateTime;
+        }
+        document.getElementById('modal-agendamento').classList.remove('hidden');
+      },
+      closeModal() {
+        document.getElementById('form-agendamento').reset();
+        document.getElementById('edit-id').value = "";
+        document.getElementById('modal-agendamento').classList.add('hidden');
+      },
+      renderEmptyState() {
+        document.getElementById('stories-container').innerHTML = '';
+        document.getElementById('feed-container').innerHTML = `
+          <div class="flex flex-col items-center justify-center h-48 text-center space-y-2 opacity-60 bg-white rounded-2xl p-6 border border-brand-100">
+            <div class="text-3xl">📅</div>
+            <h3 class="font-bold text-stone-700 text-xs">A base de dados está pronta</h3>
+            <p class="text-xs text-stone-500 max-w-xs">Clique no calendário ou no botão "+ Novo Agendamento" para começar.</p>
+          </div>
+        `;
+      },
+      renderData(data) {
+        if (!data || data.length === 0) return this.renderEmptyState();
+
+        // Renderização de Stories do Dia
+        document.getElementById('stories-container').innerHTML = data.map(i => `
+          <div class="flex flex-col items-center space-y-1 min-w-[56px] cursor-pointer" onclick="Controllers.prepareEdit('${i.id}')">
+            <div class="w-12 h-12 rounded-full p-[2px] border-2 border-emerald-500 flex items-center justify-center bg-white">
+              <div class="w-10 h-10 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 font-bold text-xs">
+                ${i.client_name ? i.client_name.substring(0,2).toUpperCase() : 'GL'}
+              </div>
+            </div>
+            <span class="text-[10px] font-bold text-stone-700 truncate w-14 text-center">${(i.client_name || '').split(' ')[0]}</span>
+          </div>
+        `).join('');
+
+        // Renderização do Feed Cronológico
+        document.getElementById('feed-container').innerHTML = data.map(i => {
+          const dateObj = new Date(i.start_time || Date.now());
+          const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const day = dateObj.toLocaleDateString([], { day: '2-digit', month: 'short' });
+
+          return `
+          <article class="bg-white rounded-2xl overflow-hidden shadow-xs border border-brand-100">
+            <div class="p-3.5 flex justify-between items-start bg-white border-b border-brand-50">
+              <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold text-xs shadow-xs">
+                  ${i.client_name ? i.client_name.substring(0,2).toUpperCase() : 'GL'}
+                </div>
+                <div>
+                  <h3 class="text-xs font-bold text-stone-800">${i.client_name || 'Cliente'}</h3>
+                  <p class="text-[10px] text-stone-400">📅 ${day} às ${time} • Tel: ${i.client_phone || '--'}</p>
+                </div>
+              </div>
+              <button onclick="Controllers.prepareEdit('${i.id}')" class="text-stone-400 hover:text-brand-600 text-xs font-bold bg-brand-50 px-2.5 py-1 rounded-lg">✏️ Editar</button>
+            </div>
+            <div class="p-3 bg-brand-50/20 space-y-2 text-xs">
+              <p class="text-stone-600">Tratamento: <strong class="text-stone-800">${i.service_name || 'Sessão'}</strong></p>
+              <div class="p-2 bg-white rounded-xl border border-brand-100 flex justify-between items-center font-mono text-[11px]">
+                <span>Fluência: <strong>${i.fluence_jcm2 || '--'} J/cm²</strong></span>
+                <span>Status: <strong class="text-emerald-600">${i.status || 'confirmada'}</strong></span>
+              </div>
+            </div>
+          </article>
+        `}).join('');
+
+        // Métricas do Dashboard
+        document.getElementById('dash-total-clientes').innerText = data.length;
+        document.getElementById('dash-cross-sell').innerText = Math.ceil(data.length * 0.4);
+        document.getElementById('dash-faturamento').innerText = `€ ${(data.length * 45).toFixed(2)}`;
+        document.getElementById('dash-retornos').innerText = data.length;
+      }
+    };
+
+    // 4. CONTROLADORES E REGRAS DE NEGÓCIO (BUSINESS LOGIC)
+    const Controllers = {
+      handleProcedimentoSelect(val) {
+        const boxManual = document.getElementById('box-procedimento-manual');
+        boxManual.classList.toggle('hidden', val !== 'outro');
+      },
+      prepareEdit(id) {
+        const item = State.agendamentos.find(a => a.id === id);
+        if (!item) return;
+
+        document.getElementById('edit-id').value = item.id;
+        document.getElementById('input-nome').value = item.client_name || '';
+        document.getElementById('input-telefone').value = item.client_phone || '';
+        document.getElementById('select-procedimento').value = item.service_name || '';
+        document.getElementById('input-fluencia').value = item.fluence_jcm2 || 0;
+        
+        UI.openModal(true);
+      },
+      async saveData(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-id').value;
+        const procSelect = document.getElementById('select-procedimento').value;
+        const procManual = document.getElementById('input-zonas-manual').value;
+
+        const payload = {
+          client_name: document.getElementById('input-nome').value.trim(),
+          client_phone: document.getElementById('input-telefone').value.trim(),
+          start_time: new Date(document.getElementById('input-data').value || Date.now()).toISOString(),
+          end_time: new Date(new Date(document.getElementById('input-data').value || Date.now()).getTime() + 45*60000).toISOString(),
+          service_category: procSelect.includes('Laser') ? 'laser' : 'facial_catia',
+          service_name: procSelect === 'outro' ? procManual : procSelect,
+          fluence_jcm2: parseFloat(document.getElementById('input-fluencia').value) || 0,
+          status: 'confirmada'
+        };
+
+        if (db) {
+          if (id) {
+            await db.from('appointments').update(payload).eq('id', id);
+          } else {
+            await db.from('appointments').insert([payload]);
+          }
+        } else {
+          if (id) {
+            const idx = State.agendamentos.findIndex(a => a.id === id);
+            State.agendamentos[idx] = { ...State.agendamentos[idx], ...payload };
+          } else {
+            State.agendamentos.unshift({ id: Date.now().toString(), ...payload });
+          }
+        }
+
+        UI.closeModal();
+        Auth.showAlert("Ficha guardada com sucesso no CRM!", "success");
+        await App.loadData();
+      }
+    };
+
+    // 5. INICIALIZAÇÃO DO CALENDÁRIO COM SELEÇÃO DE SLOT
+    let calendarObj = null;
+    function renderCalendar() {
+      if (calendarObj) return;
+      const calendarEl = document.getElementById('calendar');
+      calendarObj = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        selectable: true,
+        headerToolbar: { left: 'prev,next today', center: 'title', right: 'timeGridWeek,dayGridMonth' },
+        select: function(info) {
+          const selectedDateTime = info.startStr.slice(0, 16);
+          UI.openModal(false, selectedDateTime);
+        }
+      });
+      calendarObj.render();
+    }
+
+    // 6. INITIALIZATION BOOTSTRAPPER
+    const App = {
+      async init() { await this.loadData(); },
+      async loadData() {
+        if (db) {
+          const { data, error } = await db.from('appointments').select('*').order('start_time', { ascending: true });
+          if (!error && data) State.agendamentos = data;
+        }
+        UI.renderData(State.agendamentos);
+      }
+    };
+
+    // Ajusta o input de data para o timezone do utilizador no carregamento do DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('input-data').value = now.toISOString().slice(0, 16);
+    });
   </script>
 </body>
 </html>
