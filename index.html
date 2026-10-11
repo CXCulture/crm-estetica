@@ -578,5 +578,93 @@
       document.getElementById('input-data').value = now.toISOString().slice(0, 16);
     });
   </script>
+  <!-- ADENDO DE LÓGICA: SISTEMA DE ESTADO REATIVO E UNDO/REDO (DESFAZER) -->
+<!-- Cole este bloco imediatamente antes da tag de fecho </body> no seu index.html -->
+
+<div id="toast-desfazer" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-5 text-xs font-bold transition-all duration-300 transform translate-y-0">
+  <span id="toast-desfazer-msg">Ação realizada com sucesso.</span>
+  <button onclick="CommandPattern.undo()" class="text-[#c89d93] hover:text-white underline transition-colors">Desfazer (Ctrl+Z)</button>
+</div>
+
+<script>
+  // 1. MÁQUINA DE ESTADO E PADRÃO DE COMANDO (Command Pattern - Undo/Redo)
+  const CommandPattern = {
+    historyCache: null,
+    timeoutRef: null,
+
+    // Intercepta uma exclusão destrutiva antes de atingir o Supabase
+    executeSoftDelete(id, table) {
+      // Passo A: Guarda o estado atual na memória temporária do navegador
+      const itemToSave = State.agendamentos.find(a => a.id === id);
+      if (!itemToSave) return;
+      
+      this.historyCache = { action: 'delete', table, data: itemToSave };
+
+      // Passo B: Atualização Otimista da UI (Remove da Interface instantaneamente)
+      State.agendamentos = State.agendamentos.filter(a => a.id !== id);
+      UI.renderData(State.agendamentos);
+
+      // Passo C: Exibe a janela flutuante com a opção de Desfazer
+      const toast = document.getElementById('toast-desfazer');
+      document.getElementById('toast-desfazer-msg').innerText = "Ficha removida da agenda.";
+      toast.classList.remove('hidden');
+
+      // Passo D: Timer de 6 segundos. Se o utilizador não desfizer, o comando é enviado ao Supabase.
+      clearTimeout(this.timeoutRef);
+      this.timeoutRef = setTimeout(async () => {
+        this.commitToSupabase();
+      }, 6000);
+    },
+
+    // Função acionada pelo botão ou atalho de teclado para recuar no tempo
+    undo() {
+      if (!this.historyCache) return;
+      
+      // Cancela a execução pendente para o Supabase
+      clearTimeout(this.timeoutRef);
+
+      // Restaura o dado na Interface
+      State.agendamentos.push(this.historyCache.data);
+      
+      // Reordena a grelha de layout cronologicamente
+      State.agendamentos.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      UI.renderData(State.agendamentos);
+
+      // Limpa a memória e esconde o alerta
+      this.historyCache = null;
+      document.getElementById('toast-desfazer').classList.add('hidden');
+      Auth.showAlert("Ação desfeita. A ficha foi restaurada.", "success");
+    },
+
+    // Efetiva a ação destrutiva no backend de forma silenciosa
+    async commitToSupabase() {
+      if (!this.historyCache || !db) return;
+      
+      try {
+        if (this.historyCache.action === 'delete') {
+          await db.from(this.historyCache.table).delete().eq('id', this.historyCache.data.id);
+        }
+      } catch (error) {
+        Auth.showAlert("Falha ao comunicar com o servidor.", "error");
+      } finally {
+        this.historyCache = null;
+        document.getElementById('toast-desfazer').classList.add('hidden');
+      }
+    }
+  };
+
+  // 2. ESCUTA DE TECLADO (Atalho Ctrl + Z para invocar a função Desfazer globalmente)
+  document.addEventListener('keydown', function(event) {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+      if (document.getElementById('toast-desfazer').classList.contains('hidden') === false) {
+        event.preventDefault();
+        CommandPattern.undo();
+      }
+    }
+  });
+
+  // Para testar esta lógica, adicione este botão dentro do card de cada cliente (no renderData do index.html):
+  // <button onclick="CommandPattern.executeSoftDelete('${i.id}', 'appointments')" class="text-rose-500 hover:text-rose-700">🗑️ Apagar</button>
+</script>
 </body>
 </html>
