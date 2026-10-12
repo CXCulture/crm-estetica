@@ -6,28 +6,54 @@
   --color-brand-50: #fdf8f6;
   --color-brand-100: #f2e8e5;
   --color-brand-200: #e5d3cd;
+  --color-brand-300: #d8bdbe;
+  --color-brand-400: #ccaaad;
   --color-brand-500: #c89d93;
   --color-brand-600: #b58479;
   --color-brand-700: #96675d;
+  --color-brand-800: #784d44;
+  --color-brand-900: #5c3830;
   --bg-app: #f4f1ee;
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1.25rem;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.08);
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+}
+
+/* RESET E BASE */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background-color: var(--bg-app);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 15px; /* Tamanho base de leitura confortável */
+  font-size: 15px;
   line-height: 1.5;
   color: #27272a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* HIARARQUIA TIPOGRÁFICA E PROPORÇÃO DE FONTES */
-h1 { font-size: 1.25rem; font-weight: 700; line-height: 1.3; } /* 20px */
-h2 { font-size: 1.125rem; font-weight: 700; line-height: 1.3; } /* 18px */
-h3 { font-size: 1rem; font-weight: 600; line-height: 1.4; }    /* 16px */
-p, span, label { font-size: 0.9375rem; }                       /* 15px */
-small, .text-xs { font-size: 0.8125rem; }                      /* 13px */
+/* HIERARQUIA TIPOGRÁFICA E PROPORÇÃO DE FONTES */
+h1 { font-size: 1.25rem; font-weight: 700; line-height: 1.3; margin: 0; }
+h2 { font-size: 1.125rem; font-weight: 700; line-height: 1.3; margin: 0; }
+h3 { font-size: 1rem; font-weight: 600; line-height: 1.4; margin: 0; }
+p, span, label { font-size: 0.9375rem; }
+small, .text-xs { font-size: 0.8125rem; }
 
-/* INPUTS E FORMULÁRIOS OTIMIZADOS PARA TOQUE (MOBILE & DESKTOP) */
+/* INPUTS E FORMULÁRIOS OTIMIZADOS (MOBILE & DESKTOP) */
 input[type="text"],
 input[type="email"],
 input[type="password"],
@@ -35,54 +61,14 @@ input[type="datetime-local"],
 input[type="number"],
 select,
 textarea {
-  font-size: 0.9375rem !important; /* Evita zoom automático no iOS */
+  font-size: 0.9375rem !important;
   padding: 0.75rem 1rem !important;
-  border-radius: 0.75rem !important;
+  border-radius: var(--radius-md) !important;
   border: 1px solid var(--color-brand-100) !important;
-  background-color: rgba(253, 248, 246, 0.5) !important;
+  background-color: rgba(253, 248, 246, 0.6) !important;
+  color: #27272a !important;
   width: 100%;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
 }
 
-input:focus, select:focus, textarea:focus {
-  outline: none !important;
-  border-color: var(--color-brand-500) !important;
-  box-shadow: 0 0 0 3px rgba(200, 157, 147, 0.2) !important;
-}
-
-/* BOTÕES ERGONÓMICOS */
-button {
-  font-size: 0.875rem !important;
-  font-weight: 600 !important;
-  min-height: 44px; /* Tamanho mínimo recomendado para clique com dedo */
-}
-
-/* AJUSTE DOS QUADROS E CARDS DO FEED */
-.card-crm {
-  background: #ffffff;
-  border: 1px solid var(--color-brand-100);
-  border-radius: 1.25rem;
-  padding: 1.25rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 1rem;
-}
-
-/* UTILITÁRIOS E TOOLTIPS */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-.has-tooltip { position: relative; cursor: pointer; }
-.tooltip-box {
-  visibility: hidden; opacity: 0; transition: opacity 0.2s ease-in-out;
-  position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
-  width: 240px; background-color: #27272a; color: #ffffff;
-  padding: 10px 14px; border-radius: 10px; font-size: 12px; z-index: 50;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
-}
-.has-tooltip:hover .tooltip-box { visibility: visible; opacity: 1; }
-
-/* AJUSTES DO FULLCALENDAR */
-.fc { font-family: inherit !important; font-size: 0.9rem !important; }
-.fc-theme-standard td, .fc-theme-standard th { border-color: #f2e8e5 !important; }
-.fc-button-primary { background-color: var(--color-brand-500) !important; border-color: var(--color-brand-500) !important; border-radius: 0.75rem !important; }
-.fc-button-primary:hover { background-color: var(--color-brand-600) !important; }
-.fc-timegrid-slot { height: 3em !important; }
+input:hover, select:
