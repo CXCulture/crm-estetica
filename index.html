@@ -2,78 +2,198 @@
 <html lang="pt-PT">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Operação GL - CRM & Estética Avançada</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="min-h-screen flex justify-center items-start bg-stone-100 font-sans text-stone-800 antialiased">
+<body class="min-h-screen bg-stone-100 font-sans text-stone-800 antialiased flex justify-center selection:bg-emerald-200">
 
-  <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl bg-red-600 text-white font-bold shadow-2xl text-center text-xs tracking-wide"></div>
+  <!-- TOAST ALERTS -->
+  <div id="system-alert" class="fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-md p-4 rounded-xl shadow-2xl text-white text-xs font-bold text-center transition-all duration-300 translate-y-[-150%]"></div>
+  
+  <div id="toast-undo" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-stone-900 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center justify-between w-[90%] max-w-sm transition-all duration-300 translate-y-[150%]">
+    <span id="toast-undo-msg" class="text-xs font-medium">Ação realizada.</span>
+    <button id="btn-undo" class="text-emerald-400 hover:text-emerald-300 font-extrabold uppercase text-[10px] tracking-wider ml-4">Desfazer</button>
+  </div>
 
-  <div id="main-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-24 border-x border-stone-200">
+  <!-- CONTAINER MOBILE-FIRST -->
+  <main id="app-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col border-x border-stone-200 overflow-hidden">
     
-    <!-- TELA DE LOGIN -->
-    <section id="screen-login" class="p-6 flex flex-col justify-center min-h-screen bg-[#faf8f6]">
-      <div class="text-center mb-10">
-        <div class="w-20 h-20 bg-stone-800 text-white rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-4 shadow-xl border-4 border-stone-200">
+    <!-- ECRÃ DE LOGIN -->
+    <section id="screen-login" class="absolute inset-0 z-50 bg-[#faf8f6] flex flex-col justify-center p-8 transition-opacity duration-500">
+      <div class="text-center mb-10 transform transition-transform hover:scale-105 duration-300">
+        <div class="w-24 h-24 bg-gradient-to-br from-stone-800 to-stone-900 text-white rounded-[2rem] flex items-center justify-center font-black text-3xl mx-auto mb-6 shadow-2xl shadow-stone-900/20 border border-stone-700">
           GL
         </div>
-        <h1 class="text-2xl font-black text-stone-800 tracking-tight">Operação GL</h1>
-        <p class="text-xs text-stone-500 font-medium mt-1">CRM & Gestão Estética Avançada</p>
+        <h1 class="text-3xl font-black text-stone-800 tracking-tight">Operação GL</h1>
+        <p class="text-xs text-stone-500 font-semibold mt-2 uppercase tracking-widest">Estética Avançada</p>
       </div>
 
-      <form id="form-login" class="space-y-4 bg-white p-6 rounded-3xl border border-stone-200/80 shadow-sm">
-        <div>
-          <label class="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Nome de Utilizador</label>
-          <input type="text" id="login-username" value="gabyzinha" required placeholder="Digite o seu utilizador" class="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 font-medium transition-all">
+      <form id="form-login" class="space-y-5 bg-white p-7 rounded-[2rem] border border-stone-100 shadow-xl shadow-stone-200/50 relative overflow-hidden">
+        <div id="login-loader" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 hidden flex-col items-center justify-center">
+          <div class="w-8 h-8 border-4 border-stone-200 border-t-stone-800 rounded-full animate-spin"></div>
+          <p class="text-[10px] font-bold text-stone-600 mt-3 uppercase tracking-wider">A autenticar...</p>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Palavra-passe</label>
-          <input type="password" id="login-pass" value="Gaby150405" required class="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 font-medium transition-all">
+          <label class="block text-[11px] font-extrabold text-stone-400 mb-2 uppercase tracking-wider">Utilizador</label>
+          <input type="text" id="login-username" value="gabyzinha" required autocomplete="username" class="w-full p-4 bg-stone-50/50 border border-stone-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-transparent transition-all placeholder:text-stone-300">
         </div>
 
-        <button type="submit" class="w-full py-4 bg-stone-800 text-white font-bold rounded-2xl text-sm shadow-lg hover:bg-stone-900 active:scale-[0.98] transition-all duration-150 mt-2">
-          Entrar no CRM Operação GL
+        <div>
+          <label class="block text-[11px] font-extrabold text-stone-400 mb-2 uppercase tracking-wider">Palavra-passe</label>
+          <input type="password" id="login-pass" value="Gaby150405" required autocomplete="current-password" class="w-full p-4 bg-stone-50/50 border border-stone-200 rounded-2xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-stone-800 focus:border-transparent transition-all">
+        </div>
+
+        <button type="submit" class="w-full py-4 bg-stone-800 hover:bg-stone-900 text-white font-black rounded-2xl text-sm shadow-lg shadow-stone-800/30 active:scale-[0.98] transition-all mt-2">
+          Aceder ao CRM
         </button>
       </form>
     </section>
 
-    <!-- PAINEL PRINCIPAL -->
-    <section id="screen-app" class="hidden flex-col flex-1">
-      <header class="p-5 bg-white border-b border-stone-200/80 sticky top-0 z-30 flex items-center justify-between shadow-sm">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-stone-800 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md">
+    <!-- ECRÃ PRINCIPAL -->
+    <section id="screen-app" class="hidden flex-col h-full opacity-0 transition-opacity duration-500">
+      
+      <header class="bg-white px-6 py-5 border-b border-stone-100 sticky top-0 z-30 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-4">
+          <div class="w-11 h-11 bg-stone-800 text-white rounded-2xl flex items-center justify-center font-black text-sm shadow-md">
             GL
           </div>
           <div>
-            <h2 class="text-sm font-bold text-stone-800 leading-tight">Operação GL</h2>
-            <p class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Ligado ao Supabase
-            </p>
+            <h2 class="text-sm font-black text-stone-800 tracking-tight">Operação GL</h2>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <p class="text-[10px] text-stone-500 font-bold uppercase tracking-wider">Sistema Online</p>
+            </div>
           </div>
         </div>
 
-        <button id="btn-logout" class="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-200 transition">
-          Sair
+        <button id="btn-logout" class="p-2.5 bg-stone-50 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         </button>
       </header>
 
-      <div id="content-agenda" class="p-4 space-y-4">
-        <div class="flex items-center justify-between pt-1">
-          <h3 class="text-sm font-extrabold text-stone-800">Atendimentos</h3>
-          <button id="btn-abrir-modal" class="px-4 py-2 bg-stone-800 text-white font-bold text-xs rounded-xl shadow-md hover:bg-stone-900">
-            + Novo Agendamento
+      <nav class="flex p-2 bg-white border-b border-stone-100">
+        <button id="tab-agenda" class="flex-1 py-3 text-xs font-black text-stone-800 bg-stone-100 rounded-xl transition-all">Agenda</button>
+        <button id="tab-clientes" class="flex-1 py-3 text-xs font-bold text-stone-400 hover:text-stone-800 transition-all">Clientes</button>
+      </nav>
+
+      <!-- CONTEÚDO AGENDA -->
+      <div id="content-agenda" class="flex-1 overflow-y-auto p-5 pb-24 space-y-5 custom-scrollbar">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-lg font-black text-stone-800 tracking-tight">Próximos</h3>
+            <p id="data-hoje" class="text-[11px] text-stone-400 font-bold uppercase tracking-wider"></p>
+          </div>
+          <button id="btn-sync" class="p-2.5 bg-white border border-stone-200 text-stone-600 rounded-xl shadow-sm hover:bg-stone-50 active:scale-95 transition-all">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
           </button>
         </div>
 
-        <div id="grid-agendamentos" class="space-y-3"></div>
+        <div id="grid-agendamentos" class="space-y-4">
+          <!-- Esqueleto de Carregamento -->
+          <div class="animate-pulse space-y-4">
+            <div class="h-28 bg-stone-200 rounded-2xl"></div>
+            <div class="h-28 bg-stone-200 rounded-2xl"></div>
+          </div>
+        </div>
       </div>
-    </section>
 
+      <!-- CONTEÚDO CLIENTES -->
+      <div id="content-clientes" class="hidden flex-1 overflow-y-auto p-5 pb-24 space-y-5 custom-scrollbar">
+        <div class="relative">
+          <input type="text" id="search-cliente" placeholder="Pesquisar cliente..." class="w-full p-4 pl-12 bg-white border border-stone-200 rounded-2xl text-sm font-semibold focus:ring-2 focus:ring-stone-800 shadow-sm transition-all">
+          <svg class="w-5 h-5 absolute left-4 top-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <div id="lista-clientes" class="space-y-3"></div>
+      </div>
+
+      <!-- BOTÃO FLUTUANTE (FAB) -->
+      <button id="btn-abrir-modal" class="absolute bottom-6 right-6 w-14 h-14 bg-stone-800 text-white rounded-full shadow-2xl shadow-stone-800/40 flex items-center justify-center hover:bg-stone-900 hover:scale-105 active:scale-95 transition-all z-40">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+      </button>
+
+    </section>
+  </main>
+
+  <!-- MODAL DE NOVO AGENDAMENTO -->
+  <div id="modal-agendamento" class="fixed inset-0 z-[60] bg-stone-900/40 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div id="modal-content" class="w-full max-w-md bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl transform translate-y-full transition-transform duration-400 ease-out flex flex-col max-h-[90vh]">
+      
+      <div class="px-6 py-5 border-b border-stone-100 flex justify-between items-center bg-white rounded-t-[2rem]">
+        <h3 class="text-lg font-black text-stone-800 tracking-tight">Nova Marcação</h3>
+        <button id="btn-fechar-modal" class="p-2 bg-stone-100 text-stone-500 rounded-full hover:bg-stone-200 transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto custom-scrollbar">
+        <form id="form-novo-agendamento" class="space-y-5">
+          
+          <div class="space-y-4 bg-stone-50 p-4 rounded-2xl border border-stone-100">
+            <div>
+              <label class="block text-[10px] font-black text-stone-500 mb-1.5 uppercase tracking-wider">Nome da Cliente</label>
+              <input type="text" id="input-nome" required placeholder="Ex: Maria Silva" class="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-stone-800">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-stone-500 mb-1.5 uppercase tracking-wider">WhatsApp / Contacto</label>
+              <input type="tel" id="input-contacto" placeholder="Ex: 910 000 000" class="w-full p-3 bg-white border border-stone-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-stone-800">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-[10px] font-black text-stone-500 mb-1.5 uppercase tracking-wider">Data e Hora</label>
+              <input type="datetime-local" id="input-data" required class="w-full p-3 bg-white border border-stone-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-stone-800">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black text-stone-500 mb-1.5 uppercase tracking-wider">Procedimento</label>
+              <select id="input-servico" class="w-full p-3 bg-white border border-stone-200 rounded-xl text-xs font-bold focus:ring-2 focus:ring-stone-800">
+                <option value="Laser - Zonas Pequenas">Laser - Zonas Pequenas</option>
+                <option value="Laser - Zonas Médias">Laser - Zonas Médias</option>
+                <option value="Laser - Corpo Inteiro">Laser - Corpo Inteiro</option>
+                <option value="Limpeza de Pele">Limpeza de Pele</option>
+                <option value="Consulta de Avaliação">Consulta de Avaliação</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-stone-800 rounded-2xl p-4 text-white shadow-inner">
+            <span class="block text-[10px] font-black text-stone-400 mb-3 uppercase tracking-widest border-b border-stone-700 pb-2">Parâmetros Técnicos (Laser)</span>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[10px] font-bold text-stone-300 mb-1">Fotótipo Fitzpatrick</label>
+                <select id="input-fototipo" class="w-full p-2.5 bg-stone-700 border-none rounded-lg text-xs font-bold text-white focus:ring-2 focus:ring-emerald-500">
+                  <option value="">Não aplicável</option>
+                  <option value="I - Muito Branca">I - Muito Branca</option>
+                  <option value="II - Branca">II - Branca</option>
+                  <option value="III - Morena Clara">III - Morena Clara</option>
+                  <option value="IV - Morena Escura">IV - Morena Escura</option>
+                  <option value="V - Negra">V - Negra</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[10px] font-bold text-stone-300 mb-1">Fluência (J/cm²)</label>
+                <input type="number" id="input-fluencia" step="0.1" placeholder="Ex: 18.5" class="w-full p-2.5 bg-stone-700 border-none rounded-lg text-xs font-bold text-white placeholder-stone-500 focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+          </div>
+
+          <button id="btn-submit-modal" type="submit" class="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl text-sm shadow-lg shadow-emerald-600/30 active:scale-[0.98] transition-all relative">
+            <span id="btn-submit-text">Confirmar Agendamento</span>
+            <div id="btn-submit-loader" class="absolute inset-0 flex items-center justify-center hidden">
+              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
