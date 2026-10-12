@@ -1,299 +1,228 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CRM & Agenda • Operação GL</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operação GL - CRM & Estética Avançada</title>
+  
+  <!-- Estilos Internos e Tailwind CSS (Via CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- SDK Oficial do Supabase (Obrigatório carregar antes do app.js) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 </head>
-<body class="min-h-screen flex justify-center items-start">
+<body class="min-h-screen flex justify-center items-start bg-stone-100 font-sans text-stone-800 antialiased">
 
-  <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl font-bold shadow-2xl transition-all duration-300 text-center text-xs"></div>
-
-  <div id="main-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-20 transition-all duration-300">
-
-    <!-- 1. TELA DE LOGIN SEGURO -->
-    <div id="view-login" class="flex-1 flex flex-col justify-center items-center p-6 bg-white">
-      <div class="w-full max-w-sm space-y-6">
-        <div class="text-center space-y-2">
-          <div class="w-16 h-16 bg-[#c89d93] rounded-full flex items-center justify-center text-white font-bold text-2xl mx-auto shadow-lg">GL</div>
-          <h1 class="text-2xl font-bold text-stone-800">Operação GL</h1>
-          <p class="text-stone-500 text-xs">CRM & Gestão Estética Avançada</p>
-        </div>
-
-        <form id="login-form" action="javascript:void(0);" method="POST" onsubmit="Auth.handleLogin(event)" class="space-y-4">
-          <div>
-            <label for="login-username" class="block font-semibold text-stone-700 text-xs mb-1">Utilizador ou E-mail</label>
-            <input type="text" id="login-username" name="username" required autocomplete="username" placeholder="Gabyzinha ou e-mail" />
-          </div>
-
-          <div>
-            <label for="login-password" class="block font-semibold text-stone-700 text-xs mb-1">Palavra-passe</label>
-            <input type="password" id="login-password" name="password" required autocomplete="current-password" placeholder="••••••••" />
-          </div>
-
-          <div class="flex items-center justify-between pt-1">
-            <label class="flex items-center space-x-2 cursor-pointer text-stone-600">
-              <input type="checkbox" id="remember-me" name="remember_me" checked class="rounded w-4 h-4" />
-              <span class="text-xs">Mantenha-me conectado</span>
-            </label>
-            <button type="button" onclick="Auth.showRecoveryView()" class="text-xs text-[#c89d93] hover:underline">Recuperar acesso</button>
-          </div>
-
-          <button type="submit" id="btn-login" class="w-full bg-[#c89d93] hover:bg-[#b58479] text-white font-bold rounded-xl transition">
-            Entrar no CRM Operação GL
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- 2. RECUPERAÇÃO DE PALAVRA-PASSE -->
-    <div id="view-recovery" class="hidden flex-1 flex flex-col justify-center items-center p-6 bg-white space-y-6">
-      <div class="w-full max-w-sm space-y-4">
-        <h2 class="text-xl font-bold text-stone-800">Recuperar Palavra-passe</h2>
-        <p class="text-stone-500 text-xs">Introduza o e-mail registado para receber o código de verificação.</p>
-        <form onsubmit="Auth.handleSendRecoveryCode(event)" class="space-y-4">
-          <div>
-            <label class="block font-semibold text-stone-700 text-xs mb-1">E-mail de Acesso</label>
-            <input type="email" id="recovery-email" required placeholder="gabyzinha@operacaogl.pt" />
-          </div>
-          <button type="submit" class="w-full bg-[#c89d93] text-white font-bold rounded-xl">Enviar Código de Segurança</button>
-          <button type="button" onclick="Auth.showLoginView()" class="w-full text-center text-stone-400 hover:text-stone-600 text-xs">← Voltar ao Login</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- 3. ÁREA PROTEGIDA DO CRM -->
-    <div id="view-app" class="hidden flex-1 flex flex-col h-full relative">
-      <header class="bg-white/95 backdrop-blur-md sticky top-0 z-30 px-5 py-3 border-b border-[#f2e8e5] flex flex-col space-y-3 shadow-xs">
-        <div class="flex justify-between items-center">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-[#c89d93] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-sm">GL</div>
-            <div>
-              <span class="block font-bold text-stone-800 text-sm">Operação GL</span>
-              <span id="sync-status" class="block text-xs font-semibold text-emerald-600">● Base de Dados Ativa</span>
-            </div>
-          </div>
-          
-          <div class="flex items-center space-x-2">
-            <button onclick="UI.toggleLayoutMode()" id="btn-view-mode" class="bg-[#fdf8f6] hover:bg-[#f2e8e5] text-[#96675d] px-3 py-2 rounded-xl border border-[#e5d3cd] font-bold transition flex items-center space-x-1 text-xs">
-              <span id="view-mode-icon">🖥️</span> <span id="view-mode-label">Ver Computador</span>
-            </button>
-            <button onclick="Auth.handleLogout()" class="text-rose-600 font-bold px-3 py-2 bg-rose-50 hover:bg-rose-100 rounded-xl border border-rose-100 transition text-xs">Sair</button>
-          </div>
-        </div>
-
-        <nav class="flex space-x-1 overflow-x-auto no-scrollbar pt-1 font-bold text-xs">
-          <button onclick="UI.switchTab('agenda')" id="tab-agenda" class="px-3.5 py-2 rounded-xl bg-[#c89d93] text-white shadow-xs whitespace-nowrap">📅 Agenda & Calendário</button>
-          <button onclick="UI.switchTab('clientes')" id="tab-clientes" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-[#fdf8f6] whitespace-nowrap">👤 Clientes & Anamnese</button>
-          <button onclick="UI.switchTab('laser')" id="tab-laser" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-[#fdf8f6] whitespace-nowrap">⚡ Parâmetros Laser</button>
-          <button onclick="UI.switchTab('catalogo')" id="tab-catalogo" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-[#fdf8f6] whitespace-nowrap">✨ Catálogo & Preços</button>
-          <button onclick="UI.switchTab('dashboard')" id="tab-dashboard" class="px-3.5 py-2 rounded-xl text-stone-500 hover:bg-[#fdf8f6] whitespace-nowrap">📊 Métricas & Cross-Sell</button>
-        </nav>
-      </header>
-
-      <main class="flex-1 overflow-y-auto p-4 space-y-5">
-        <section id="sec-agenda" class="space-y-4">
-          <div class="bg-white p-4 rounded-2xl border border-[#f2e8e5] shadow-xs">
-            <p class="font-bold uppercase text-stone-400 text-xs mb-2.5">Atendimentos do Dia</p>
-            <div id="stories-container" class="flex space-x-4 overflow-x-auto no-scrollbar pb-1"></div>
-          </div>
-
-          <div class="flex justify-between items-center px-1">
-            <h2 class="text-base font-bold text-stone-800">Feed Cronológico</h2>
-            <button onclick="UI.openModal()" class="bg-[#c89d93] hover:bg-[#b58479] text-white px-4 py-2 rounded-xl font-bold transition text-xs">+ Novo Agendamento</button>
-          </div>
-
-          <div id="feed-container"></div>
-          
-          <div class="bg-white p-4 rounded-2xl border border-[#f2e8e5] shadow-xs space-y-3">
-            <div class="flex justify-between items-center">
-              <h3 class="font-bold text-stone-800 text-sm">Calendário de Atendimentos</h3>
-              <span class="text-xs text-stone-400">Clique em qualquer slot para agendar</span>
-            </div>
-            <div id="calendar" class="min-h-[450px]"></div>
-          </div>
-        </section>
-
-        <section id="sec-clientes" class="hidden space-y-4">
-          <div class="flex justify-between items-center">
-            <div>
-              <h2 class="text-base font-bold text-stone-800">Fichas de Clientes & Anamnese</h2>
-              <p class="text-stone-400 text-xs">Contacto, morada, fototipo e alertas médicos</p>
-            </div>
-            <button onclick="UI.openModal()" class="bg-[#c89d93] hover:bg-[#b58479] text-white px-4 py-2 rounded-xl font-bold text-xs">+ Cadastrar Cliente</button>
-          </div>
-          <div id="clientes-list"></div>
-        </section>
-
-        <section id="sec-laser" class="hidden space-y-4">
-          <div>
-            <h2 class="text-base font-bold text-stone-800">Parâmetros das Máquinas de Laser</h2>
-            <p class="text-stone-400 text-xs">Registo técnico por sessão de fluência (J/cm²), pulso (ms), spot e disparos</p>
-          </div>
-          <div id="laser-list"></div>
-        </section>
-
-        <section id="sec-catalogo" class="hidden space-y-4">
-          <h2 class="text-base font-bold text-stone-800">Catálogo Oficial de Procedimentos</h2>
-          
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            <div class="card-crm space-y-4">
-              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-2 border-b border-[#f2e8e5] pb-2">
-                <span>⚡</span> <span>Depilação a Laser (Zonas & Corpo Todo)</span>
-              </h3>
-              <ul class="space-y-4 text-stone-600 text-xs">
-                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
-                  <span class="flex-1 leading-snug">Zonas Pequenas <span class="block text-xs text-stone-400 mt-0.5">(Buço, Queixo, Axilas, Linha Alba)</span></span> 
-                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 15,00 - € 25,00</strong>
-                </li>
-                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
-                  <span class="flex-1 leading-snug">Zonas Médias / Grandes <span class="block text-xs text-stone-400 mt-0.5">(Virilha Total, Meia Perna)</span></span> 
-                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 35,00 - € 60,00</strong>
-                </li>
-                <li class="flex flex-row justify-between items-center gap-4 pt-1 bg-[#fdf8f6] p-3 rounded-xl border border-[#e5d3cd]">
-                  <strong class="flex-1 text-stone-800 leading-snug">Sessão Corpo Todo <span class="block text-xs text-stone-500 font-normal mt-0.5">Pacote Geral Completo</span></strong> 
-                  <strong class="flex-none whitespace-nowrap text-[#c89d93] text-base">€ 120,00</strong>
-                </li>
-              </ul>
-            </div>
-
-            <div class="card-crm space-y-4">
-              <h3 class="text-[#c89d93] uppercase font-bold text-xs flex items-center space-x-2 border-b border-[#f2e8e5] pb-2">
-                <span>✨</span> <span>Estética Facial (Tratamentos Cátia)</span>
-              </h3>
-              <ul class="space-y-4 text-stone-600 text-xs">
-                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
-                  <span class="flex-1 leading-snug">Limpeza de Pele Profunda <span class="block text-xs text-stone-400 mt-0.5">+ Hidratação Fisiológica</span></span> 
-                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 45,00</strong>
-                </li>
-                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
-                  <span class="flex-1 leading-snug">Protocolo Anti-Manchas & Acne <span class="block text-xs text-stone-400 mt-0.5">(Peeling Suave)</span></span> 
-                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 55,00</strong>
-                </li>
-                <li class="flex flex-row justify-between items-start gap-4 border-b border-[#fdf8f6] pb-3">
-                  <span class="flex-1 leading-snug">Microagulhamento <span class="block text-xs text-stone-400 mt-0.5">Renovação Dérmica Avançada</span></span> 
-                  <strong class="flex-none whitespace-nowrap text-stone-800 text-right">€ 65,00</strong>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section id="sec-dashboard" class="hidden space-y-4">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="card-crm space-y-1">
-              <p class="font-bold uppercase text-stone-400 text-xs">Total Clientes</p>
-              <p class="text-2xl font-bold text-stone-800" id="dash-total-clientes">0</p>
-            </div>
-            <div class="card-crm space-y-1">
-              <p class="font-bold uppercase text-stone-400 text-xs">Oportunidades Facial</p>
-              <p class="text-2xl font-bold text-[#c89d93]" id="dash-cross-sell">0</p>
-            </div>
-            <div class="card-crm space-y-1">
-              <p class="font-bold uppercase text-stone-400 text-xs">Previsão Faturamento</p>
-              <p class="text-2xl font-bold text-stone-800" id="dash-faturamento">€ 0,00</p>
-            </div>
-            <div class="card-crm space-y-1">
-              <p class="font-bold uppercase text-stone-400 text-xs">Sessões Laser</p>
-              <p class="text-2xl font-bold text-[#b58479]" id="dash-retornos">0</p>
-            </div>
-          </div>
-        </section>
-      </main>
-    </div>
+  <!-- ========================================== -->
+  <!-- SISTEMA DE NOTIFICAÇÕES & ALERTAS          -->
+  <!-- ========================================== -->
+  <div id="auth-alert" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] p-4 rounded-2xl bg-red-600 text-white font-bold shadow-2xl text-center text-xs tracking-wide"></div>
+  
+  <div id="toast-desfazer" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-5 text-xs font-bold transition-all duration-300">
+    <span id="toast-msg">Operação efetuada.</span>
+    <button id="btn-undo" class="text-amber-400 hover:text-amber-300 underline font-extrabold uppercase">Desfazer</button>
   </div>
 
-  <div id="modal-agendamento" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center sm:p-4">
-    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 border border-[#f2e8e5] max-h-[90vh] overflow-y-auto text-xs">
-      <div class="flex justify-between items-center border-b border-[#fdf8f6] pb-3">
-        <h3 id="modal-title" class="font-bold text-stone-800 text-sm">Ficha de Agendamento & Anamnese</h3>
-        <button onclick="UI.closeModal()" class="text-stone-400 hover:text-stone-700 font-bold bg-stone-100 w-8 h-8 rounded-full flex items-center justify-center">&times;</button>
+  <!-- ========================================== -->
+  <!-- ESTRUTURA PRINCIPAL (MOBILE RESPONSIVE)    -->
+  <!-- ========================================== -->
+  <div id="main-container" class="w-full max-w-md bg-[#faf8f6] min-h-screen shadow-2xl relative flex flex-col pb-24 border-x border-stone-200">
+    
+    <!-- -------------------------------------- -->
+    <!-- ECRÃ 1: AUTENTICAÇÃO / LOGIN           -->
+    <!-- -------------------------------------- -->
+    <section id="screen-login" class="p-6 flex flex-col justify-center min-h-screen bg-[#faf8f6]">
+      <div class="text-center mb-10">
+        <div class="w-20 h-20 bg-stone-800 text-white rounded-full flex items-center justify-center font-extrabold text-2xl mx-auto mb-4 shadow-xl border-4 border-stone-200">
+          GL
+        </div>
+        <h1 class="text-2xl font-black text-stone-800 tracking-tight">Operação GL</h1>
+        <p class="text-xs text-stone-500 font-medium mt-1">CRM & Gestão Estética Avançada</p>
       </div>
 
-      <form id="form-agendamento" onsubmit="Controllers.saveData(event)" class="space-y-4">
-        <input type="hidden" id="edit-id" value="" />
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-stone-700 mb-1">Nome Completo *</label>
-            <input type="text" id="input-nome" required placeholder="Ex: Ana Silva" />
-          </div>
-          <div>
-            <label class="block font-semibold text-stone-700 mb-1">WhatsApp / Telefone *</label>
-            <input type="text" id="input-telefone" required placeholder="Ex: 920465838" />
-          </div>
+      <form id="form-login" class="space-y-4 bg-white p-6 rounded-3xl border border-stone-200/80 shadow-sm">
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Utilizador ou e-mail</label>
+          <input type="email" id="login-email" value="gabyzinha@operacaogl.pt" required class="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 font-medium transition-all">
         </div>
 
         <div>
-          <label class="block font-semibold text-stone-700 mb-1">Data e Hora *</label>
-          <input type="datetime-local" id="input-data" required class="font-mono" />
+          <label class="block text-xs font-bold text-stone-600 mb-1.5 uppercase tracking-wider">Palavra-passe</label>
+          <input type="password" id="login-pass" value="Gaby150405" required class="w-full p-3.5 bg-stone-50 border border-stone-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-stone-400 font-medium transition-all">
+        </div>
+
+        <div class="flex items-center justify-between text-xs pt-1">
+          <label class="flex items-center space-x-2 text-stone-600 cursor-pointer">
+            <input type="checkbox" checked class="rounded border-stone-300 text-stone-800 focus:ring-stone-400">
+            <span>Manter sessão</span>
+          </label>
+          <a href="#" class="text-stone-400 hover:text-stone-600">Recuperar acesso</a>
+        </div>
+
+        <button type="submit" class="w-full py-4 bg-stone-800 text-white font-bold rounded-2xl text-sm shadow-lg hover:bg-stone-900 active:scale-[0.98] transition-all duration-150 mt-2">
+          Entrar no CRM Operação GL
+        </button>
+      </form>
+
+      <footer class="mt-12 text-center text-[10px] text-stone-400">
+        &copy; 2026 Operação GL. Todos os direitos reservados.
+      </footer>
+    </section>
+
+    <!-- -------------------------------------- -->
+    <!-- ECRÃ 2: PAINEL PRINCIPAL DO CRM        -->
+    <!-- -------------------------------------- -->
+    <section id="screen-app" class="hidden flex-col flex-1">
+      
+      <!-- Cabeçalho Superior -->
+      <header class="p-5 bg-white border-b border-stone-200/80 sticky top-0 z-30 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-stone-800 text-white rounded-xl flex items-center justify-center font-bold text-sm shadow-md">
+            GL
+          </div>
+          <div>
+            <h2 class="text-sm font-bold text-stone-800 leading-tight">Operação GL</h2>
+            <p class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span> Base de Dados Ativa
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="btn-sync" class="p-2 text-stone-500 hover:text-stone-800 rounded-xl bg-stone-100 hover:bg-stone-200 transition" title="Sincronizar Dados">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          </button>
+          <button id="btn-logout" class="px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 rounded-xl border border-red-200 transition">
+            Sair
+          </button>
+        </div>
+      </header>
+
+      <!-- Navegação Secundária / Abas -->
+      <nav class="flex border-b border-stone-200 bg-stone-50/50 p-1.5 gap-1 text-xs font-bold text-stone-500">
+        <button id="tab-agenda" class="flex-1 py-2 rounded-xl bg-white text-stone-800 shadow-sm border border-stone-200/60 transition">
+          Agenda & Calendário
+        </button>
+        <button id="tab-clientes" class="flex-1 py-2 rounded-xl hover:bg-white hover:text-stone-800 transition">
+          Clientes & Anamnese
+        </button>
+      </nav>
+
+      <!-- CONTEÚDO 1: AGENDA -->
+      <div id="content-agenda" class="p-4 space-y-4">
+        
+        <!-- Ações Rápidas -->
+        <div class="flex items-center justify-between pt-1">
+          <div>
+            <h3 class="text-sm font-extrabold text-stone-800">Atendimentos do Dia</h3>
+            <p class="text-[11px] text-stone-400">Gerencie a agenda de laser e estética</p>
+          </div>
+          <button id="btn-abrir-modal" class="px-4 py-2 bg-stone-800 text-white font-bold text-xs rounded-xl shadow-md hover:bg-stone-900 active:scale-95 transition">
+            + Novo Agendamento
+          </button>
+        </div>
+
+        <!-- Feed Cronológico / Lista de Agendamentos -->
+        <div id="grid-agendamentos" class="space-y-3">
+          <div class="text-center py-12 bg-white rounded-3xl border border-dashed border-stone-300 p-6">
+            <svg class="w-10 h-10 text-stone-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <p class="text-xs font-bold text-stone-500">A carregar dados do Supabase...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- CONTEÚDO 2: CLIENTES & ANAMNESE -->
+      <div id="content-clientes" class="hidden p-4 space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-extrabold text-stone-800">Fichas de Clientes</h3>
+          <input type="text" id="search-cliente" placeholder="Pesquisar por nome..." class="p-2 border border-stone-200 rounded-xl text-xs bg-white focus:outline-none focus:ring-2 focus:ring-stone-400">
+        </div>
+
+        <div id="lista-clientes" class="space-y-2">
+          <p class="text-xs text-stone-400 text-center py-8">Nenhum cliente selecionado.</p>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: NOVO AGENDAMENTO                    -->
+  <!-- ========================================== -->
+  <div id="modal-agendamento" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all">
+    <div class="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 space-y-4 border border-stone-200 max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex justify-between items-center border-b border-stone-100 pb-3">
+        <h3 class="text-base font-bold text-stone-800">Novo Agendamento</h3>
+        <button id="btn-fechar-modal" class="text-stone-400 hover:text-stone-600 font-bold text-lg p-1">&times;</button>
+      </div>
+
+      <form id="form-novo-agendamento" class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Nome Completo</label>
+          <input type="text" id="input-nome" required placeholder="Ex: Maria Silva" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-stone-400">
         </div>
 
         <div>
-          <label class="block font-semibold text-stone-700 mb-1">Procedimento / Tratamento *</label>
-          <select id="select-procedimento" onchange="Controllers.handleProcedimentoSelect(this.value)">
-            <optgroup label="⚡ Depilação a Laser">
-              <option value="Laser - Zonas Pequenas (Buço/Axilas)">Laser - Zonas Pequenas (Buço/Axilas)</option>
-              <option value="Laser - Zonas Grandes (Virilha/Pernas)">Laser - Zonas Grandes (Virilha/Pernas)</option>
-              <option value="Laser - Corpo Todo">Laser - Corpo Todo</option>
-            </optgroup>
-            <optgroup label="✨ Estética Facial (Cátia)">
-              <option value="Facial - Limpeza de Pele Profunda">Facial - Limpeza de Pele Profunda</option>
-              <option value="Facial - Tratamento Acne/Manchas">Facial - Tratamento Acne/Manchas</option>
-              <option value="Facial - Microagulhamento">Facial - Microagulhamento</option>
-            </optgroup>
-            <option value="outro">✍️ Outro (Digitar Manualmente...)</option>
-          </select>
+          <label class="block text-xs font-bold text-stone-600 mb-1">Contacto / WhatsApp</label>
+          <input type="tel" id="input-contacto" placeholder="Ex: 912345678" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-stone-400">
         </div>
 
-        <div id="box-procedimento-manual" class="hidden">
-          <label class="block font-semibold text-stone-700 mb-1">Procedimento Customizado</label>
-          <input type="text" id="input-zonas-manual" placeholder="Digite o tratamento customizado" />
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Data e Hora</label>
+            <input type="datetime-local" id="input-data" required class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-stone-400">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-stone-600 mb-1">Procedimento</label>
+            <select id="input-servico" class="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-stone-400">
+              <option value="Laser - Zonas Pequenas">Laser - Zonas Pequenas</option>
+              <option value="Laser - Zonas Médias">Laser - Zonas Médias</option>
+              <option value="Laser - Corpo Inteiro">Laser - Corpo Inteiro</option>
+              <option value="Tratamento Facial">Tratamento Facial</option>
+              <option value="Consulta de Avaliação">Consulta de Avaliação</option>
+            </select>
+          </div>
         </div>
 
-        <div class="border-t border-[#f2e8e5] pt-3 space-y-3">
-          <p class="font-bold text-[#c89d93] uppercase tracking-wider text-xs">⚡ Parâmetros do Laser & Anamnese</p>
-          <div class="grid grid-cols-2 gap-3">
+        <!-- Parâmetros Específicos de Laser -->
+        <div class="p-3 bg-stone-50 border border-stone-200/80 rounded-2xl space-y-2">
+          <span class="block text-[11px] font-bold text-stone-500 uppercase tracking-wider">Parâmetros de Laser (Opcional)</span>
+          <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block font-semibold text-stone-700 mb-1">Fototipo Fitzpatrick</label>
-              <select id="input-fototipo">
-                <option value="III">Fototipo III - Morena Clara</option>
-                <option value="I">Fototipo I - Muito Clara</option>
-                <option value="II">Fototipo II - Clara</option>
-                <option value="IV">Fototipo IV - Morena Média</option>
-                <option value="V">Fototipo V - Escura</option>
-                <option value="VI">Fototipo VI - Negra</option>
+              <label class="block text-[10px] font-semibold text-stone-600">Fotótipo Fitpatrick</label>
+              <select id="input-fototipo" class="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs">
+                <option value="Tipo I">Fotótipo I</option>
+                <option value="Tipo II">Fotótipo II</option>
+                <option value="Tipo III">Fotótipo III</option>
+                <option value="Tipo IV">Fotótipo IV</option>
+                <option value="Tipo V">Fotótipo V</option>
               </select>
             </div>
             <div>
-              <label class="block font-semibold text-stone-700 mb-1">
-                Fluência (J/cm²)
-                <span class="has-tooltip text-[#c89d93]">ⓘ<span class="tooltip-box">Energia por cm². Maior em peles claras.</span></span>
-              </label>
-              <input type="number" step="0.1" id="input-fluencia" placeholder="18" />
+              <label class="block text-[10px] font-semibold text-stone-600">Fluência (J/cm²)</label>
+              <input type="number" id="input-fluencia" placeholder="Ex: 18" class="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs">
             </div>
           </div>
         </div>
 
-        <div class="flex space-x-2 pt-3">
-          <button type="button" onclick="UI.closeModal()" class="w-1/3 font-bold text-stone-600 bg-stone-100 hover:bg-stone-200 rounded-xl">Cancelar</button>
-          <button type="submit" id="btn-submit" class="w-2/3 bg-[#c89d93] text-white font-bold rounded-xl hover:bg-[#b58479]">Salvar no CRM</button>
+        <div class="pt-2 flex gap-2">
+          <button type="button" id="btn-cancelar-modal" class="flex-1 py-3 bg-stone-100 text-stone-600 font-bold text-xs rounded-xl hover:bg-stone-200">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 py-3 bg-stone-800 text-white font-bold text-xs rounded-xl shadow-md hover:bg-stone-900">
+            Salvar no CRM
+          </button>
         </div>
       </form>
+
     </div>
   </div>
 
-  <div id="toast-desfazer" class="hidden fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-stone-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-5 text-xs font-bold transition-all duration-300">
-    <span id="toast-desfazer-msg">Ação realizada com sucesso.</span>
-    <button onclick="CommandPattern.undo()" class="text-[#c89d93] hover:text-white underline transition-colors">Desfazer (Ctrl+Z)</button>
-  </div>
-
-  <!-- LÓGICA EXTERNA MODULAR -->
+  <!-- SCRIPT PRINCIPAL DA APLICAÇÃO -->
   <script src="app.js"></script>
 </body>
 </html>
