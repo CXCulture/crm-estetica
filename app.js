@@ -1,8 +1,8 @@
 // ============================================================================
 // CONFIGURAÇÃO SUPABASE & ESTADO GLOBAL
 // ============================================================================
-const SUPABASE_URL = 'https://SEU-PROJETO.supabase.co';
-const SUPABASE_ANON_KEY = 'SUA-CHAVE-ANONIMA-AQUI';
+const SUPABASE_URL = 'https://iegzgihyasujcqcbenaw.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_EfXeQHSFCmzy4UgiGYWmBA_R3LsLr3B';
 
 let db = null;
 if (SUPABASE_URL !== 'https://SEU-PROJETO.supabase.co') {
